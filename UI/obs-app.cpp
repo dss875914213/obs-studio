@@ -2271,60 +2271,12 @@ static int run_program(fstream &logFile, int argc, char *argv[])
 
 	ScopeProfiler prof{run_program_init};
 
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)) && \
-	(QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-	QGuiApplication::setAttribute(opt_disable_high_dpi_scaling
-					      ? Qt::AA_DisableHighDpiScaling
-					      : Qt::AA_EnableHighDpiScaling);
-#endif
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)) && defined(_WIN32)
 	QGuiApplication::setHighDpiScaleFactorRoundingPolicy(
 		Qt::HighDpiScaleFactorRoundingPolicy::PassThrough);
 #endif
 
 	QCoreApplication::addLibraryPath(".");
-
-#if __APPLE__
-	InstallNSApplicationSubclass();
-	InstallNSThreadLocks();
-
-	if (!isInBundle()) {
-		blog(LOG_ERROR,
-		     "OBS cannot be run as a standalone binary on macOS. Run the Application bundle instead.");
-		return ret;
-	}
-#endif
-
-#if !defined(_WIN32) && !defined(__APPLE__)
-	/* NOTE: The Breeze Qt style plugin adds frame arround QDockWidget with
-	 * QPainter which can not be modifed. To avoid this the base style is
-	 * enforce to the Qt default style on Linux: Fusion. */
-
-	setenv("QT_STYLE_OVERRIDE", "Fusion", false);
-
-#if OBS_QT_VERSION == 6
-	/* NOTE: Users blindly set this, but this theme is incompatble with Qt6 and
-	 * crashes loading saved geometry. Just turn off this theme and let users complain OBS
-	 * looks ugly instead of crashing. */
-	const char *platform_theme = getenv("QT_QPA_PLATFORMTHEME");
-	if (platform_theme && strcmp(platform_theme, "qt5ct") == 0)
-		unsetenv("QT_QPA_PLATFORMTHEME");
-#endif
-
-#if defined(ENABLE_WAYLAND) && defined(USE_XDG)
-	/* NOTE: Qt doesn't use the Wayland platform on GNOME, so we have to
-	 * force it using the QT_QPA_PLATFORM env var. It's still possible to
-	 * use other QPA platforms using this env var, or the -platform command
-	 * line option. Remove after Qt 6.3 is everywhere. */
-
-	const char *desktop = getenv("XDG_CURRENT_DESKTOP");
-	const char *session_type = getenv("XDG_SESSION_TYPE");
-	if (session_type && desktop && strcmp(desktop, "GNOME") == 0 &&
-	    strcmp(session_type, "wayland") == 0)
-		setenv("QT_QPA_PLATFORM", "wayland", false);
-#endif
-#endif
-
 	OBSApp program(argc, argv, profilerNameStore.get());
 	try {
 		QAccessible::installFactory(accessibleFactory);
@@ -2336,10 +2288,10 @@ static int run_program(fstream &logFile, int argc, char *argv[])
 
 		bool created_log = false;
 
-		program.AppInit();
+		program.AppInit(); // 初始化界面
 		delete_oldest_file(false, "obs-studio/profiler_data");
 
-		OBSTranslator translator;
+		OBSTranslator translator; // 界面语言翻译相关
 		program.installTranslator(&translator);
 
 		/* --------------------------------------- */
@@ -2394,64 +2346,8 @@ static int run_program(fstream &logFile, int argc, char *argv[])
 
 		/* --------------------------------------- */
 	run:
-
-#if !defined(_WIN32) && !defined(__APPLE__) && !defined(__FreeBSD__)
-		// Mounted by termina during chromeOS linux container startup
-		// https://chromium.googlesource.com/chromiumos/overlays/board-overlays/+/master/project-termina/chromeos-base/termina-lxd-scripts/files/lxd_setup.sh
-		os_dir_t *crosDir = os_opendir("/opt/google/cros-containers");
-		if (crosDir) {
-			QMessageBox::StandardButtons buttons(QMessageBox::Ok);
-			QMessageBox mb(QMessageBox::Critical,
-				       QTStr("ChromeOS.Title"),
-				       QTStr("ChromeOS.Text"), buttons,
-				       nullptr);
-
-			mb.exec();
-			return 0;
-		}
-#endif
-
 		if (!created_log)
-			create_log_file(logFile);
-
-#ifdef __APPLE__
-		MacPermissionStatus audio_permission =
-			CheckPermission(kAudioDeviceAccess);
-		MacPermissionStatus video_permission =
-			CheckPermission(kVideoDeviceAccess);
-		MacPermissionStatus accessibility_permission =
-			CheckPermission(kAccessibility);
-		MacPermissionStatus screen_permission =
-			CheckPermission(kScreenCapture);
-
-		int permissionsDialogLastShown =
-			config_get_int(GetGlobalConfig(), "General",
-				       "MacOSPermissionsDialogLastShown");
-		if (permissionsDialogLastShown <
-		    MACOS_PERMISSIONS_DIALOG_VERSION) {
-			OBSPermissions *check = new OBSPermissions(
-				nullptr, screen_permission, video_permission,
-				audio_permission, accessibility_permission);
-			check->exec();
-		}
-#endif
-
-#ifdef _WIN32
-		if (IsRunningOnWine()) {
-			QMessageBox mb(QMessageBox::Question,
-				       QTStr("Wine.Title"), QTStr("Wine.Text"));
-			mb.setTextFormat(Qt::RichText);
-			mb.addButton(QTStr("AlreadyRunning.LaunchAnyway"),
-				     QMessageBox::AcceptRole);
-			QPushButton *closeButton =
-				mb.addButton(QMessageBox::Close);
-			mb.setDefaultButton(closeButton);
-
-			mb.exec();
-			if (mb.clickedButton() == closeButton)
-				return 0;
-		}
-#endif
+			create_log_file(logFile); // 创建日志文件，将后面的日志打印到该文件
 
 		if (argc > 1) {
 			stringstream stor;
@@ -2462,12 +2358,11 @@ static int run_program(fstream &logFile, int argc, char *argv[])
 			blog(LOG_INFO, "Command Line Arguments: %s",
 			     stor.str().c_str());
 		}
-
 		if (!program.OBSInit())
 			return 0;
 
 		prof.Stop();
-
+		// 循环执行
 		ret = program.exec();
 
 	} catch (const char *error) {
@@ -3355,6 +3250,7 @@ int main(int argc, char *argv[])
 	fstream logFile;
 
 	curl_global_init(CURL_GLOBAL_ALL);
+	blog(LOG_INFO, "dss test");
 	int ret = run_program(logFile, argc, argv);
 
 #ifdef _WIN32

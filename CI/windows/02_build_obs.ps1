@@ -9,6 +9,7 @@ Param(
     [String]$BuildConfiguration = $(if (Test-Path variable:BuildConfiguration) { "${BuildConfiguration}" } else { "RelWithDebInfo" })
 )
 
+$CmakeGenerator = "Visual Studio 16 2019"
 ##############################################################################
 # Windows libobs library build function
 ##############################################################################
@@ -116,9 +117,10 @@ function Configure-OBS {
             "$(if (Test-Path Variable:$Quiet) { "-Wno-deprecated -Wno-dev --log-level=ERROR" })"
         )
     }
-
+	Write-Status "=========================dss=================="
+	Write-Status "CmakeGenerator ${CmakeGenerator}"
     Invoke-External cmake -S . -B  "${BuildDirectoryActual}" @CmakeCommand
-
+	Write-Status "=========================dss222=================="
     Ensure-Directory ${CheckoutDir}
 }
 

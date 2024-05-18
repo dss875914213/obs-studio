@@ -14,7 +14,8 @@ endif()
 
 project(obs-studio VERSION ${OBS_VERSION_CANONICAL})
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
-
+add_compile_options("/Od;/Zi")
+add_link_options("/DEBUG")
 # Use target folders for MSVC/Xcode/etc.
 include(DeprecationHelpers)
 include(ObsHelpers)
