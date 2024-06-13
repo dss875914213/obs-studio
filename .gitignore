@@ -3,7 +3,7 @@
 *.dll
 *.dylib
 *.so
-
+.deps
 #cmake
 /cmbuild/
 /build/
