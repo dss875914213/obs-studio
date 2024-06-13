@@ -90,15 +90,16 @@ static inline void gs_float3_srgb_linear_to_nonlinear(float *f)
 	f[2] = gs_srgb_linear_to_nonlinear(f[2]);
 }
 
+// xyz 分别乘以 a 通道
 static inline void gs_premultiply_xyza(uint8_t *data)
 {
 	uint8_t u[4];
 	float f[4];
 	memcpy(&u, data, sizeof(u));
-	gs_u8x4_to_float4(f, u);
-	gs_premultiply_float4(f);
-	gs_float3_to_u8x3(u, f);
-	memcpy(data, &u, sizeof(u));
+	gs_u8x4_to_float4(f, u); // 把 uint8_t 转成 float
+	gs_premultiply_float4(f); // 把前三项分别乘以第四项 a
+	gs_float3_to_u8x3(u, f); // 把 float 转成 uint8_t
+	memcpy(data, &u, sizeof(u)); // 把数据拷贝会 data
 }
 
 static inline void gs_premultiply_xyza_srgb(uint8_t *data)

@@ -18,7 +18,7 @@ struct image_source {
 	char *file;
 	bool persistent;
 	bool linear_alpha;
-	time_t file_timestamp;
+	time_t file_timestamp; // 文件修改时间，当 tick 中检测到修改时间变了会重新加载
 	float update_time_elapsed;
 	uint64_t last_time;
 	bool active;

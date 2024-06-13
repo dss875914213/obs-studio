@@ -1195,7 +1195,7 @@ struct obs_encoder {
 	bool destroy_on_stop;
 
 	/* stores the video/audio media output pointer.  video_t *or audio_t **/
-	void *media;
+	void *media; // 音视频混音后数据 通过 obs_encoder_set_audio/obs_encoder_set_video
 
 	pthread_mutex_t callbacks_mutex;
 	DARRAY(struct encoder_callback) callbacks;

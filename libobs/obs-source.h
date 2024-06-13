@@ -118,6 +118,7 @@ enum obs_media_state {
  * If this flag is specified, the video_render callback will pass a NULL
  * effect, and effect-based filters will not use direct rendering.
  */
+// 定制的绘制，而不是默认 effect 绘制
 #define OBS_SOURCE_CUSTOM_DRAW (1 << 3)
 
 /**
@@ -137,6 +138,7 @@ enum obs_media_state {
  *
  * This capability flag is always set for transitions.
  */
+// 没太看懂，转场的时候用
 #define OBS_SOURCE_COMPOSITE (1 << 6)
 
 /**
@@ -146,6 +148,7 @@ enum obs_media_state {
  * and should prefer to duplicate via holding references rather than full
  * duplication.
  */
+// 通过引用而不是复制来创建复制源
 #define OBS_SOURCE_DO_NOT_DUPLICATE (1 << 7)
 
 /**
@@ -229,6 +232,7 @@ struct obs_source_info {
 	 * OBS_SOURCE_TYPE_FILTER for filter sources, and
 	 * OBS_SOURCE_TYPE_TRANSITION for transition sources.
 	 */
+	// 输入源；滤镜；专场；场景都是 source
 	enum obs_source_type type;
 
 	/** Source output flags */

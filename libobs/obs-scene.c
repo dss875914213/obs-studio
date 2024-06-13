@@ -2147,7 +2147,7 @@ static obs_sceneitem_t *obs_scene_add_internal(obs_scene_t *scene,
 		} else {
 			while (last->next)
 				last = last->next;
-
+			// 插到最后面
 			last->next = item;
 			item->prev = last;
 		}
