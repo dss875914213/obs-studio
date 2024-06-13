@@ -4,6 +4,7 @@
 *.dylib
 *.so
 .deps
+build64test/
 #cmake
 /cmbuild/
 /build/
