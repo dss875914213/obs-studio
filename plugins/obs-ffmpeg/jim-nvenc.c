@@ -85,42 +85,42 @@ static const char *get_codec_name(enum codec_type type)
 
 struct nvenc_data {
 	obs_encoder_t *encoder;
-	enum codec_type codec;
+	enum codec_type codec; // 编码类型
 	GUID codec_guid;
 
-	void *session;
-	NV_ENC_INITIALIZE_PARAMS params;
-	NV_ENC_CONFIG config;
-	int rc_lookahead;
-	int buf_count;
-	int output_delay;
-	int buffers_queued;
-	size_t next_bitstream;
-	size_t cur_bitstream;
-	bool encode_started;
-	bool first_packet;
-	bool can_change_bitrate;
-	int32_t bframes;
+	void *session; // 会话
+	NV_ENC_INITIALIZE_PARAMS params; // 初始化参数
+	NV_ENC_CONFIG config; // 配置信息
+	int rc_lookahead; // 预测
+	int buf_count;	// 缓存个数
+	int output_delay; // 输出延时
+	int buffers_queued; // 解码数据队列长度
+	size_t next_bitstream; // 下一个空的字节流索引
+	size_t cur_bitstream; // 当前字节流索引
+	bool encode_started; // 编码起始位置
+	bool first_packet; // 第一个包
+	bool can_change_bitrate; // 是否允许改变码率
+	int32_t bframes; // b 帧个数
 
-	DARRAY(struct nv_bitstream) bitstreams;
-	DARRAY(struct nv_texture) textures;
-	DARRAY(struct handle_tex) input_textures;
-	struct circlebuf dts_list;
+	DARRAY(struct nv_bitstream) bitstreams; // 编码后字节流队列
+	DARRAY(struct nv_texture) textures; // 缓存纹理队列
+	DARRAY(struct handle_tex) input_textures; // 输入纹理队列
+	struct circlebuf dts_list; // dts 列表
 
-	DARRAY(uint8_t) packet_data;
-	int64_t packet_pts;
-	bool packet_keyframe;
+	DARRAY(uint8_t) packet_data; // 编码后数据
+	int64_t packet_pts; // 
+	bool packet_keyframe; // 是否是关键帧
 
-	ID3D11Device *device;
-	ID3D11DeviceContext *context;
+	ID3D11Device *device; // dx11 设备
+	ID3D11DeviceContext *context; // dx11 上下文
 
-	uint32_t cx;
-	uint32_t cy;
+	uint32_t cx; // 宽
+	uint32_t cy; // 高
 
-	uint8_t *header;
+	uint8_t *header; // sps 和 pps
 	size_t header_size;
 
-	uint8_t *sei;
+	uint8_t *sei; // sei 数据
 	size_t sei_size;
 };
 
@@ -203,8 +203,8 @@ static bool nv_texture_init(struct nvenc_data *enc, struct nv_texture *nvtex)
 		return false;
 	}
 
-	nvtex->res = res.registeredResource;
-	nvtex->tex = tex;
+	nvtex->res = res.registeredResource; // 注册的资源
+	nvtex->tex = tex; // 注册的纹理
 	nvtex->mapped_res = NULL;
 	return true;
 }
@@ -244,6 +244,7 @@ static const char *av1_nvenc_get_name(void *type_data)
 	return "NVIDIA NVENC AV1";
 }
 
+// 获取不同 cap 的参数
 static inline int nv_get_cap(struct nvenc_data *enc, NV_ENC_CAPS cap)
 {
 	if (!enc->session)
@@ -257,6 +258,7 @@ static inline int nv_get_cap(struct nvenc_data *enc, NV_ENC_CAPS cap)
 	return v;
 }
 
+// 更新码率
 static bool nvenc_update(void *data, obs_data_t *settings)
 {
 	struct nvenc_data *enc = data;
@@ -283,6 +285,7 @@ static bool nvenc_update(void *data, obs_data_t *settings)
 	return true;
 }
 
+// 加载动态库
 static HANDLE get_lib(struct nvenc_data *enc, const char *lib)
 {
 	HMODULE mod = GetModuleHandleA(lib);
@@ -297,6 +300,7 @@ static HANDLE get_lib(struct nvenc_data *enc, const char *lib)
 
 typedef HRESULT(WINAPI *CREATEDXGIFACTORY1PROC)(REFIID, void **);
 
+// 获取 device 和 context
 static bool init_d3d11(struct nvenc_data *enc, obs_data_t *settings)
 {
 	HMODULE dxgi = get_lib(enc, "DXGI.dll");
@@ -349,6 +353,7 @@ static bool init_d3d11(struct nvenc_data *enc, obs_data_t *settings)
 	return true;
 }
 
+// 获取会话
 static bool init_session(struct nvenc_data *enc)
 {
 	NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS params = {
@@ -364,6 +369,7 @@ static bool init_session(struct nvenc_data *enc)
 	return true;
 }
 
+// 初始化编码参数
 static void initialize_params(struct nvenc_data *enc, const GUID *nv_preset,
 			      NV_ENC_TUNING_INFO nv_tuning, uint32_t width,
 			      uint32_t height, uint32_t fps_num,
@@ -389,6 +395,7 @@ static void initialize_params(struct nvenc_data *enc, const GUID *nv_preset,
 	params->tuningInfo = nv_tuning;
 }
 
+// 获取 preset 对应值
 static inline GUID get_nv_preset2(const char *preset2)
 {
 	if (astrcmpi(preset2, "p1") == 0) {
@@ -408,6 +415,7 @@ static inline GUID get_nv_preset2(const char *preset2)
 	}
 }
 
+// 得到 tuning 值
 static inline NV_ENC_TUNING_INFO get_nv_tuning(const char *tuning)
 {
 	if (astrcmpi(tuning, "ll") == 0) {
@@ -430,11 +438,15 @@ static inline NV_ENC_MULTI_PASS get_nv_multipass(const char *multipass)
 	}
 }
 
+// 
 static bool init_encoder_base(struct nvenc_data *enc, obs_data_t *settings,
 			      int bf, bool compatibility, bool *lossless)
 {
+	// 码率控制方式
 	const char *rc = obs_data_get_string(settings, "rate_control");
+	// 码率
 	int bitrate = (int)obs_data_get_int(settings, "bitrate");
+	// 最大码率
 	int max_bitrate = (int)obs_data_get_int(settings, "max_bitrate");
 	int cqp = (int)obs_data_get_int(settings, "cqp");
 	int keyint_sec = (int)obs_data_get_int(settings, "keyint_sec");
@@ -590,9 +602,9 @@ static bool init_encoder_base(struct nvenc_data *enc, obs_data_t *settings,
 			  voi->fps_num, voi->fps_den);
 
 	config->gopLength = gop_size;
-	config->frameIntervalP = 1 + bf;
+	config->frameIntervalP = 1 + bf; // gop 中 IPB 的模式
 
-	enc->bframes = bf;
+	enc->bframes = bf; 
 
 	/* lookahead */
 	const bool use_profile_lookahead = config->rcParams.enableLookahead;
@@ -777,6 +789,7 @@ static bool init_encoder_h264(struct nvenc_data *enc, obs_data_t *settings,
 		config->profileGUID = NV_ENC_H264_PROFILE_HIGH_GUID;
 	}
 
+	// 
 	if (NV_FAILED(nv.nvEncInitializeEncoder(enc->session, &enc->params))) {
 		return false;
 	}
@@ -960,6 +973,7 @@ static bool init_encoder_av1(struct nvenc_data *enc, obs_data_t *settings,
 	return true;
 }
 
+// 初始化字节流
 static bool init_bitstreams(struct nvenc_data *enc)
 {
 	da_reserve(enc->bitstreams, enc->buf_count);
@@ -975,6 +989,7 @@ static bool init_bitstreams(struct nvenc_data *enc)
 	return true;
 }
 
+// 初始化纹理，并保存到 enc 中
 static bool init_textures(struct nvenc_data *enc)
 {
 	da_reserve(enc->textures, enc->buf_count);
@@ -992,6 +1007,7 @@ static bool init_textures(struct nvenc_data *enc)
 
 static void nvenc_destroy(void *data);
 
+// 初始化特性编码器
 static bool init_specific_encoder(struct nvenc_data *enc, obs_data_t *settings,
 				  int bf, bool compatibility)
 {
@@ -1007,6 +1023,7 @@ static bool init_specific_encoder(struct nvenc_data *enc, obs_data_t *settings,
 	return false;
 }
 
+// 初始化编码器
 static bool init_encoder(struct nvenc_data *enc, enum codec_type codec,
 			 obs_data_t *settings, obs_encoder_t *encoder)
 {
@@ -1062,6 +1079,7 @@ static bool init_encoder(struct nvenc_data *enc, enum codec_type codec,
 	return true;
 }
 
+
 static void *nvenc_create_internal(enum codec_type codec, obs_data_t *settings,
 				   obs_encoder_t *encoder)
 {
@@ -1084,24 +1102,31 @@ static void *nvenc_create_internal(enum codec_type codec, obs_data_t *settings,
 		break;
 	}
 
+	// 加载函数
 	if (!init_nvenc(encoder)) {
 		goto fail;
 	}
 	if (NV_FAILED(nv_create_instance(&init))) {
 		goto fail;
 	}
+	// 获取 device 和 context
 	if (!init_d3d11(enc, settings)) {
 		goto fail;
 	}
+	// 获取会话
 	if (!init_session(enc)) {
 		goto fail;
 	}
+	// 初始化编码器
 	if (!init_encoder(enc, codec, settings, encoder)) {
 		goto fail;
 	}
+
+	// 初始化编码后数据队列
 	if (!init_bitstreams(enc)) {
 		goto fail;
 	}
+	// 初始化纹理队列用于保存输入的纹理
 	if (!init_textures(enc)) {
 		goto fail;
 	}
@@ -1121,6 +1146,7 @@ static void *nvenc_create_base(enum codec_type codec, obs_data_t *settings,
 {
 	/* this encoder requires shared textures, this cannot be used on a
 	 * gpu other than the one OBS is currently running on. */
+	// 共享纹理，需用使用同一个 gpu
 	const int gpu = (int)obs_data_get_int(settings, "gpu");
 	if (gpu != 0) {
 		blog(LOG_INFO,
@@ -1148,6 +1174,7 @@ static void *nvenc_create_base(enum codec_type codec, obs_data_t *settings,
 	}
 
 reroute:
+	// 应该是降级到 ffmpeg 的 n卡编码器
 	switch (codec) {
 	case CODEC_H264:
 		return obs_encoder_create_rerouted(encoder, "ffmpeg_nvenc");
@@ -1225,6 +1252,7 @@ static void nvenc_destroy(void *data)
 	bfree(enc);
 }
 
+// 获取共享纹理
 static ID3D11Texture2D *get_tex_from_handle(struct nvenc_data *enc,
 					    uint32_t handle,
 					    IDXGIKeyedMutex **km_out)
@@ -1269,6 +1297,7 @@ static ID3D11Texture2D *get_tex_from_handle(struct nvenc_data *enc,
 	return input_tex;
 }
 
+// 得到编码器后数据
 static bool get_encoded_packet(struct nvenc_data *enc, bool finalize)
 {
 	void *s = enc->session;
@@ -1318,6 +1347,7 @@ static bool get_encoded_packet(struct nvenc_data *enc, bool finalize)
 			enc->first_packet = false;
 		}
 
+		// 将 bitstreams 中的数据拷贝到 packet_data
 		da_copy_array(enc->packet_data, lock.bitstreamBufferPtr,
 			      lock.bitstreamSizeInBytes);
 
@@ -1351,6 +1381,7 @@ static bool get_encoded_packet(struct nvenc_data *enc, bool finalize)
 	return true;
 }
 
+// 编码
 static bool nvenc_encode_tex(void *data, uint32_t handle, int64_t pts,
 			     uint64_t lock_key, uint64_t *next_key,
 			     struct encoder_packet *packet,
@@ -1384,7 +1415,7 @@ static bool nvenc_encode_tex(void *data, uint32_t handle, int64_t pts,
 	}
 
 	circlebuf_push_back(&enc->dts_list, &pts, sizeof(pts));
-
+	// 拷贝到输出纹理
 	/* ------------------------------------ */
 	/* copy to output tex                   */
 
@@ -1421,6 +1452,7 @@ static bool nvenc_encode_tex(void *data, uint32_t handle, int64_t pts,
 	params.inputWidth = enc->cx;
 	params.inputHeight = enc->cy;
 	params.inputPitch = enc->cx;
+	// 编码后数据拷贝到对应编码后队列
 	params.outputBitstream = bs->ptr;
 
 	err = nv.nvEncEncodePicture(enc->session, &params);

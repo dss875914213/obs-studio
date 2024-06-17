@@ -59,6 +59,7 @@ static const char *hevc_nvenc_getname(void *unused)
 }
 #endif
 
+// 支持的视频YUV格式
 static inline bool valid_format(enum video_format format)
 {
 	switch (format) {
@@ -73,6 +74,7 @@ static inline bool valid_format(enum video_format format)
 	}
 }
 
+// 将 info 中视频格式改为编码器支持的格式
 static void nvenc_video_info(void *data, struct video_scale_info *info)
 {
 	struct nvenc_encoder *enc = data;
@@ -90,29 +92,42 @@ static void nvenc_video_info(void *data, struct video_scale_info *info)
 
 static void set_psycho_aq(struct nvenc_encoder *enc, bool psycho_aq)
 {
+	// 空间的预测
 	av_opt_set_int(enc->ffve.context->priv_data, "spatial-aq", psycho_aq,
 		       0);
+	// 时间的预测
 	av_opt_set_int(enc->ffve.context->priv_data, "temporal-aq", psycho_aq,
 		       0);
 }
 
+// 更新编码器配置
 static bool nvenc_update(struct nvenc_encoder *enc, obs_data_t *settings,
 			 bool psycho_aq)
 {
+	// 获取码率控制方式
 	const char *rc = obs_data_get_string(settings, "rate_control");
+	// 码率
 	int bitrate = (int)obs_data_get_int(settings, "bitrate");
+	// 
 	int cqp = (int)obs_data_get_int(settings, "cqp");
+	// 关键帧时间
 	int keyint_sec = (int)obs_data_get_int(settings, "keyint_sec");
+	// 旧 preset
 	const char *preset = obs_data_get_string(settings, "preset");
+	// 新 preset
 	const char *preset2 = obs_data_get_string(settings, "preset2");
 	const char *tuning = obs_data_get_string(settings, "tune");
+	// 多通道
 	const char *multipass = obs_data_get_string(settings, "multipass");
 	const char *profile = obs_data_get_string(settings, "profile");
+	// 指定使用哪个 gpu
 	int gpu = (int)obs_data_get_int(settings, "gpu");
 	bool cbr_override = obs_data_get_bool(settings, "cbr");
+	// b 帧数量
 	int bf = (int)obs_data_get_int(settings, "bf");
 
 	video_t *video = obs_encoder_video(enc->ffve.encoder);
+	// 视频参数，宽高、帧率、颜色空间、格式
 	const struct video_output_info *voi = video_output_get_info(video);
 	struct video_scale_info info;
 
@@ -138,6 +153,7 @@ static bool nvenc_update(struct nvenc_encoder *enc, obs_data_t *settings,
 
 	nvenc_video_info(enc, &info);
 
+	// 默认 vbr
 	av_opt_set_int(enc->ffve.context->priv_data, "cbr", false, 0);
 	av_opt_set(enc->ffve.context->priv_data, "profile", profile, 0);
 
@@ -208,6 +224,7 @@ static bool nvenc_update(struct nvenc_encoder *enc, obs_data_t *settings,
 	return ffmpeg_video_encoder_init_codec(&enc->ffve);
 }
 
+// 编码中修改编码器参数
 static bool nvenc_reconfigure(void *data, obs_data_t *settings)
 {
 #if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(58, 19, 101)
@@ -229,6 +246,7 @@ static bool nvenc_reconfigure(void *data, obs_data_t *settings)
 	return true;
 }
 
+// 关闭，释放资源
 static void nvenc_destroy(void *data)
 {
 	struct nvenc_encoder *enc = data;
@@ -238,6 +256,7 @@ static void nvenc_destroy(void *data)
 	bfree(enc);
 }
 
+// 初始化失败报错
 static void on_init_error(void *data, int ret)
 {
 	struct nvenc_encoder *enc = data;
@@ -272,6 +291,7 @@ static void on_init_error(void *data, int ret)
 	dstr_free(&error_message);
 }
 
+// 解析第一帧数据，获取 sps/pps 、 sei 等数据
 static void on_first_packet(void *data, AVPacket *pkt, struct darray *da)
 {
 	struct nvenc_encoder *enc = data;
@@ -299,6 +319,7 @@ static void *nvenc_create_internal(obs_data_t *settings, obs_encoder_t *encoder,
 {
 	struct nvenc_encoder *enc = bzalloc(sizeof(*enc));
 
+	// 创建编码器和上下文
 #ifdef ENABLE_HEVC
 	enc->hevc = hevc;
 	if (hevc) {
@@ -318,7 +339,7 @@ static void *nvenc_create_internal(obs_data_t *settings, obs_encoder_t *encoder,
 					       on_first_packet))
 			goto fail;
 	}
-
+	// 设置编码器参数
 	if (!nvenc_update(enc, settings, psycho_aq))
 		goto fail;
 
@@ -329,9 +350,11 @@ fail:
 	return NULL;
 }
 
+// 创建 264 编码器
 static void *h264_nvenc_create(obs_data_t *settings, obs_encoder_t *encoder)
 {
 	video_t *video = obs_encoder_video(encoder);
+	// 10bit 和 hdr 暂不支持
 	const struct video_output_info *voi = video_output_get_info(video);
 	switch (voi->format) {
 	case VIDEO_FORMAT_I010:
@@ -368,6 +391,7 @@ static void *h264_nvenc_create(obs_data_t *settings, obs_encoder_t *encoder)
 }
 
 #ifdef ENABLE_HEVC
+// 创建 265 编码器
 static void *hevc_nvenc_create(obs_data_t *settings, obs_encoder_t *encoder)
 {
 	video_t *video = obs_encoder_video(encoder);
@@ -408,6 +432,7 @@ static void *hevc_nvenc_create(obs_data_t *settings, obs_encoder_t *encoder)
 }
 #endif
 
+// 执行编码操作
 static bool nvenc_encode(void *data, struct encoder_frame *frame,
 			 struct encoder_packet *packet, bool *received_packet)
 {
@@ -421,6 +446,7 @@ enum codec_type {
 	CODEC_AV1,
 };
 
+// 编码器默认值
 static void nvenc_defaults_base(enum codec_type codec, obs_data_t *settings)
 {
 	obs_data_set_default_int(settings, "bitrate", 2500);
@@ -457,6 +483,7 @@ void av1_nvenc_defaults(obs_data_t *settings)
 static bool rate_control_modified(obs_properties_t *ppts, obs_property_t *p,
 				  obs_data_t *settings)
 {
+	// 不同码率控制方式，可以设置的值不同
 	const char *rc = obs_data_get_string(settings, "rate_control");
 	bool cqp = astrcmpi(rc, "CQP") == 0;
 	bool vbr = astrcmpi(rc, "VBR") == 0;
@@ -476,6 +503,7 @@ static bool rate_control_modified(obs_properties_t *ppts, obs_property_t *p,
 	return true;
 }
 
+// 编码器参数
 obs_properties_t *nvenc_properties_internal(enum codec_type codec, bool ffmpeg)
 {
 	obs_properties_t *props = obs_properties_create();
@@ -645,6 +673,7 @@ obs_properties_t *hevc_nvenc_properties_ffmpeg(void *unused)
 }
 #endif
 
+// sps 和 pps 信息
 static bool nvenc_extra_data(void *data, uint8_t **extra_data, size_t *size)
 {
 	struct nvenc_encoder *enc = data;
@@ -654,6 +683,7 @@ static bool nvenc_extra_data(void *data, uint8_t **extra_data, size_t *size)
 	return true;
 }
 
+// sei 信息
 static bool nvenc_sei_data(void *data, uint8_t **extra_data, size_t *size)
 {
 	struct nvenc_encoder *enc = data;

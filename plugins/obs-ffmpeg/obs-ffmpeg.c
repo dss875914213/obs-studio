@@ -382,6 +382,7 @@ bool obs_module_load(void)
 #endif
 
 #ifdef _WIN32
+		// 共享纹理编码器
 		if (get_win_ver_int() > 0x0601) {
 			jim_nvenc_load(h264, hevc, av1);
 		} else {
