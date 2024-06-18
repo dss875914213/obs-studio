@@ -58,19 +58,19 @@ struct rtmp_stream {
 
 	pthread_mutex_t packets_mutex;
 	struct circlebuf packets;
-	bool sent_headers;
+	bool sent_headers; // 已经发送 header 信息
 
 	bool got_first_video;
 	int64_t start_dts_offset;
 
-	volatile bool connecting;
-	pthread_t connect_thread;
+	volatile bool connecting; // 正在重连标识
+	pthread_t connect_thread; // 重连线程
 
 	volatile bool active;
-	volatile bool disconnected;
+	volatile bool disconnected; // 断开连接
 	volatile bool encode_error;
 	volatile bool silent_reconnect;
-	pthread_t send_thread;
+	pthread_t send_thread; // 发送线程
 
 	int max_shutdown_time_sec;
 
@@ -92,7 +92,7 @@ struct rtmp_stream {
 
 	int64_t last_dts_usec;
 
-	uint64_t total_bytes_sent;
+	uint64_t total_bytes_sent; //  总的发送字节数
 	int dropped_frames;
 
 #ifdef TEST_FRAMEDROPS

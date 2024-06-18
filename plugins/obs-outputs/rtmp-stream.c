@@ -38,6 +38,7 @@
 #define MIN_ESTIMATE_DURATION_MS 1000
 #define MAX_ESTIMATE_DURATION_MS 2000
 
+// 获取 stream 名字
 static const char *rtmp_stream_getname(void *unused)
 {
 	UNUSED_PARAMETER(unused);
@@ -154,6 +155,7 @@ static void *rtmp_stream_create(obs_data_t *settings, obs_output_t *output)
 	pthread_mutex_init_value(&stream->packets_mutex);
 
 	RTMP_LogSetCallback(log_rtmp);
+	// 设置日志等级
 	RTMP_LogSetLevel(RTMP_LOGWARNING);
 
 	if (pthread_mutex_init(&stream->packets_mutex, NULL) != 0)
@@ -415,6 +417,7 @@ retry_send:
 	return len;
 }
 
+// 发送数据
 static int send_packet(struct rtmp_stream *stream,
 		       struct encoder_packet *packet, bool is_header,
 		       size_t idx)
@@ -440,6 +443,7 @@ static int send_packet(struct rtmp_stream *stream,
 		}
 	}
 
+	// 多音轨数据
 	if (idx > 0) {
 		flv_additional_packet_mux(
 			packet, is_header ? 0 : stream->start_dts_offset, &data,
@@ -456,6 +460,7 @@ static int send_packet(struct rtmp_stream *stream,
 	ret = RTMP_Write(&stream->rtmp, (char *)data, (int)size, 0);
 	bfree(data);
 
+	// 头文件直接释放；其他数据可能被引用，需要删减引用计数
 	if (is_header)
 		bfree(packet->data);
 	else
@@ -602,6 +607,7 @@ static void log_sndbuf_size(struct rtmp_stream *stream)
 	}
 }
 
+// 发送线程
 static void *send_thread(void *data)
 {
 	struct rtmp_stream *stream = data;
@@ -630,6 +636,7 @@ static void *send_thread(void *data)
 	log_sndbuf_size(stream);
 #endif
 
+	// 等待信号量
 	while (os_sem_wait(stream->send_sem) == 0) {
 		struct encoder_packet packet;
 		struct dbr_frame dbr_frame;
@@ -638,6 +645,7 @@ static void *send_thread(void *data)
 			break;
 		}
 
+		// 获取下一个包
 		if (!get_next_packet(stream, &packet))
 			continue;
 
@@ -648,6 +656,7 @@ static void *send_thread(void *data)
 			}
 		}
 
+		// 发送头信息
 		if (!stream->sent_headers) {
 			if (!send_headers(stream)) {
 				os_atomic_set_bool(&stream->disconnected, true);
@@ -673,6 +682,7 @@ static void *send_thread(void *data)
 			break;
 		}
 
+		// dbr 是什么？
 		if (stream->dbr_enabled) {
 			dbr_frame.send_end = os_gettime_ns();
 
@@ -809,6 +819,7 @@ static bool send_audio_header(struct rtmp_stream *stream, size_t idx,
 	return send_packet(stream, &packet, true, idx) >= 0;
 }
 
+// 发送视频头信息
 static bool send_video_header(struct rtmp_stream *stream)
 {
 	obs_output_t *context = stream->output;
@@ -819,18 +830,21 @@ static bool send_video_header(struct rtmp_stream *stream)
 	struct encoder_packet packet = {
 		.type = OBS_ENCODER_VIDEO, .timebase_den = 1, .keyframe = true};
 
+	// 获取 extra data
 	if (!obs_encoder_get_extra_data(vencoder, &header, &size))
 		return false;
+	// 组包成对应的形式
 	packet.size = obs_parse_avc_header(&packet.data, header, size);
 	return send_packet(stream, &packet, true, 0) >= 0;
 }
 
+// 发送音频和视频的头信息
 static inline bool send_headers(struct rtmp_stream *stream)
 {
 	stream->sent_headers = true;
 	size_t i = 0;
 	bool next = true;
-
+	// 没看懂为啥要发送多个音频编码器信息，而且第一个音轨不一定有数据
 	if (!send_audio_header(stream, i++, &next))
 		return false;
 	if (!send_video_header(stream))
@@ -850,6 +864,7 @@ static inline bool reset_semaphore(struct rtmp_stream *stream)
 	return os_sem_init(&stream->send_sem, 0) == 0;
 }
 
+// 初始化发送线程
 static int init_send(struct rtmp_stream *stream)
 {
 	int ret;
@@ -1040,6 +1055,7 @@ static void add_connect_data(char **penc, char *pend)
 	*penc = AMF_EncodeNamedBoolean(*penc, pend, &val, true);
 }
 
+// 常识连接
 static int try_connect(struct rtmp_stream *stream)
 {
 	if (dstr_is_empty(&stream->path)) {
@@ -1199,11 +1215,13 @@ static bool init_connect(struct rtmp_stream *stream)
 	return true;
 }
 
+// 连接线程
 static void *connect_thread(void *data)
 {
 	struct rtmp_stream *stream = data;
 	int ret;
 
+	// 设置线程名字
 	os_set_thread_name("rtmp-stream: connect_thread");
 
 	if (!silently_reconnecting(stream)) {
@@ -1234,10 +1252,12 @@ static void *connect_thread(void *data)
 	return NULL;
 }
 
+// rtmp 开始，创建连接线程
 static bool rtmp_stream_start(void *data)
 {
 	struct rtmp_stream *stream = data;
 
+	// 每太看懂，
 	if (!silently_reconnecting(stream)) {
 		if (!obs_output_can_begin_data_capture(stream->output, 0))
 			return false;
@@ -1491,6 +1511,7 @@ static void check_to_drop_frames(struct rtmp_stream *stream, bool pframes)
 static bool add_video_packet(struct rtmp_stream *stream,
 			     struct encoder_packet *packet)
 {
+	// 丢帧逻辑
 	if (!silently_reconnecting(stream)) {
 		check_to_drop_frames(stream, false);
 		check_to_drop_frames(stream, true);
@@ -1509,6 +1530,7 @@ static bool add_video_packet(struct rtmp_stream *stream,
 	return add_packet(stream, packet);
 }
 
+// 接收编码后数据
 static void rtmp_stream_data(void *data, struct encoder_packet *packet)
 {
 	struct rtmp_stream *stream = data;
@@ -1539,6 +1561,7 @@ static void rtmp_stream_data(void *data, struct encoder_packet *packet)
 
 	pthread_mutex_lock(&stream->packets_mutex);
 
+	// 视频有丢帧逻辑，所以需要包一层
 	if (!disconnected(stream)) {
 		added_packet = (packet->type == OBS_ENCODER_VIDEO)
 				       ? add_video_packet(stream, &new_packet)
@@ -1553,6 +1576,7 @@ static void rtmp_stream_data(void *data, struct encoder_packet *packet)
 		obs_encoder_packet_release(&new_packet);
 }
 
+// 默认值
 static void rtmp_stream_defaults(obs_data_t *defaults)
 {
 	obs_data_set_default_int(defaults, OPT_DROP_THRESHOLD, 700);
@@ -1563,6 +1587,7 @@ static void rtmp_stream_defaults(obs_data_t *defaults)
 	obs_data_set_default_bool(defaults, OPT_LOWLATENCY_ENABLED, false);
 }
 
+// UI 界面属性
 static obs_properties_t *rtmp_stream_properties(void *unused)
 {
 	UNUSED_PARAMETER(unused);
@@ -1598,6 +1623,7 @@ static obs_properties_t *rtmp_stream_properties(void *unused)
 	return props;
 }
 
+//  总的发送字节数
 static uint64_t rtmp_stream_total_bytes_sent(void *data)
 {
 	struct rtmp_stream *stream = data;
@@ -1642,7 +1668,7 @@ struct obs_output_info rtmp_output_info = {
 	.get_defaults = rtmp_stream_defaults,
 	.get_properties = rtmp_stream_properties,
 	.get_total_bytes = rtmp_stream_total_bytes_sent,
-	.get_congestion = rtmp_stream_congestion,
+	.get_congestion = rtmp_stream_congestion, // 拥塞
 	.get_connect_time_ms = rtmp_stream_connect_time,
 	.get_dropped_frames = rtmp_stream_dropped_frames,
 };

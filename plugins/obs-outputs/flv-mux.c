@@ -58,6 +58,7 @@ void write_file_info(FILE *file, int64_t duration_ms, int64_t size)
 	fwrite(buf, 1, enc - buf, file);
 }
 
+// 构建 meta data
 static void build_flv_meta_data(obs_output_t *context, uint8_t **output,
 				size_t *size)
 {
