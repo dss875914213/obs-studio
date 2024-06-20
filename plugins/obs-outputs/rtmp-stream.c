@@ -279,6 +279,7 @@ static void reinsert_packet_at_front(struct rtmp_stream *stream,
 
 #define RTMP_PACKET_TYPE_RECONNECT 0x20
 
+// 接收数据
 static bool process_recv_data(struct rtmp_stream *stream, size_t size)
 {
 	UNUSED_PARAMETER(size);
@@ -558,6 +559,7 @@ static void set_output_error(struct rtmp_stream *stream)
 		obs_output_set_last_error(stream->output, msg);
 }
 
+// 计算预期码率，这个码率低，一个可能是发送过来的音视频数据本来就少，另一个可能是网络问题发送不出去
 static void dbr_add_frame(struct rtmp_stream *stream, struct dbr_frame *back)
 {
 	struct dbr_frame front;
@@ -568,13 +570,16 @@ static void dbr_add_frame(struct rtmp_stream *stream, struct dbr_frame *back)
 
 	stream->dbr_data_size += back->size;
 
+	// 发送耗时 ms
 	dur = (back->send_end - front.send_beg) / 1000000;
 
+	// 维持队列长度为 2s
 	if (dur >= MAX_ESTIMATE_DURATION_MS) {
 		stream->dbr_data_size -= front.size;
 		circlebuf_pop_front(&stream->dbr_frames, NULL, sizeof(front));
 	}
 
+	// 计算码率，每1s计算一次
 	stream->dbr_est_bitrate =
 		(dur >= MIN_ESTIMATE_DURATION_MS)
 			? (long)(stream->dbr_data_size * 1000 / dur)
@@ -583,6 +588,7 @@ static void dbr_add_frame(struct rtmp_stream *stream, struct dbr_frame *back)
 	stream->dbr_est_bitrate /= 1000;
 
 	if (stream->dbr_est_bitrate) {
+		// 减去音频码率，则为视频的调整值
 		stream->dbr_est_bitrate -= stream->audio_bitrate;
 		if (stream->dbr_est_bitrate < 50)
 			stream->dbr_est_bitrate = 50;
@@ -682,7 +688,6 @@ static void *send_thread(void *data)
 			break;
 		}
 
-		// dbr 是什么？
 		if (stream->dbr_enabled) {
 			dbr_frame.send_end = os_gettime_ns();
 
@@ -1346,6 +1351,7 @@ static bool find_first_video_packet(struct rtmp_stream *stream,
 	return false;
 }
 
+// bitrate 降低
 static bool dbr_bitrate_lowered(struct rtmp_stream *stream)
 {
 	long prev_bitrate = stream->dbr_prev_bitrate;
@@ -1354,6 +1360,7 @@ static bool dbr_bitrate_lowered(struct rtmp_stream *stream)
 
 	if (stream->dbr_est_bitrate &&
 	    stream->dbr_est_bitrate < stream->dbr_cur_bitrate) {
+		// 调整之后，清空 dbr_frames ，隔1s后才可以调整
 		stream->dbr_data_size = 0;
 		circlebuf_pop_front(&stream->dbr_frames, NULL,
 				    stream->dbr_frames.size);
@@ -1404,11 +1411,13 @@ static bool dbr_bitrate_lowered(struct rtmp_stream *stream)
 
 	stream->dbr_prev_bitrate = 0;
 	stream->dbr_cur_bitrate = new_bitrate;
+	// 每 4s，码率往回加 1/10
 	stream->dbr_inc_timeout = os_gettime_ns() + DBR_INC_TIMER;
 	info("bitrate decreased to: %ld", stream->dbr_cur_bitrate);
 	return true;
 }
 
+// 修改编码器码率
 static void dbr_set_bitrate(struct rtmp_stream *stream)
 {
 	obs_encoder_t *vencoder = obs_output_get_video_encoder(stream->output);
@@ -1420,6 +1429,7 @@ static void dbr_set_bitrate(struct rtmp_stream *stream)
 	obs_data_release(settings);
 }
 
+// bitrate 升高
 static void dbr_inc_bitrate(struct rtmp_stream *stream)
 {
 	stream->dbr_prev_bitrate = stream->dbr_cur_bitrate;
@@ -1488,12 +1498,14 @@ static void check_to_drop_frames(struct rtmp_stream *stream, bool pframes)
 			return;
 		}
 
+		// 计算码率调整值
 		if ((uint64_t)buffer_duration_usec >= DBR_TRIGGER_USEC) {
 			pthread_mutex_lock(&stream->dbr_mutex);
 			bitrate_changed = dbr_bitrate_lowered(stream);
 			pthread_mutex_unlock(&stream->dbr_mutex);
 		}
 
+		// 调整码率
 		if (bitrate_changed) {
 			debug("buffer_duration_msec: %" PRId64,
 			      buffer_duration_usec / 1000);
@@ -1630,6 +1642,7 @@ static uint64_t rtmp_stream_total_bytes_sent(void *data)
 	return stream->total_bytes_sent;
 }
 
+// 获取丢帧数
 static int rtmp_stream_dropped_frames(void *data)
 {
 	struct rtmp_stream *stream = data;
