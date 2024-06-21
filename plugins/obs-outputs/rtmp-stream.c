@@ -45,6 +45,7 @@ static const char *rtmp_stream_getname(void *unused)
 	return obs_module_text("RTMPStream");
 }
 
+// 回调日志
 static void log_rtmp(int level, const char *format, va_list args)
 {
 	if (level > RTMP_LOGWARNING)
@@ -55,6 +56,7 @@ static void log_rtmp(int level, const char *format, va_list args)
 
 static inline size_t num_buffered_packets(struct rtmp_stream *stream);
 
+// 释放未输出的包
 static inline void free_packets(struct rtmp_stream *stream)
 {
 	size_t num_packets;
@@ -73,31 +75,37 @@ static inline void free_packets(struct rtmp_stream *stream)
 	pthread_mutex_unlock(&stream->packets_mutex);
 }
 
+// 停止中
 static inline bool stopping(struct rtmp_stream *stream)
 {
 	return os_event_try(stream->stop_event) != EAGAIN;
 }
 
+// 连接中
 static inline bool connecting(struct rtmp_stream *stream)
 {
 	return os_atomic_load_bool(&stream->connecting);
 }
 
+// 激活状态
 static inline bool active(struct rtmp_stream *stream)
 {
 	return os_atomic_load_bool(&stream->active);
 }
 
+// 断开
 static inline bool disconnected(struct rtmp_stream *stream)
 {
 	return os_atomic_load_bool(&stream->disconnected);
 }
 
+// 静默重连
 static inline bool silently_reconnecting(struct rtmp_stream *stream)
 {
 	return os_atomic_load_bool(&stream->silent_reconnect);
 }
 
+// 销毁 rtmp
 static void rtmp_stream_destroy(void *data)
 {
 	struct rtmp_stream *stream = data;
@@ -148,12 +156,14 @@ static void rtmp_stream_destroy(void *data)
 	bfree(stream);
 }
 
+// 创建 rtmp
 static void *rtmp_stream_create(obs_data_t *settings, obs_output_t *output)
 {
 	struct rtmp_stream *stream = bzalloc(sizeof(struct rtmp_stream));
 	stream->output = output;
 	pthread_mutex_init_value(&stream->packets_mutex);
 
+	// 设置日志回调函数
 	RTMP_LogSetCallback(log_rtmp);
 	// 设置日志等级
 	RTMP_LogSetLevel(RTMP_LOGWARNING);
@@ -202,6 +212,7 @@ fail:
 	return NULL;
 }
 
+// rtmp 关闭
 static void rtmp_stream_stop(void *data, uint64_t ts)
 {
 	struct rtmp_stream *stream = data;
@@ -242,6 +253,7 @@ static inline void set_rtmp_dstr(AVal *val, struct dstr *str)
 	val->av_len = valid ? (int)str->len : 0;
 }
 
+// 获取下一个数据，并从队列中删除
 static inline bool get_next_packet(struct rtmp_stream *stream,
 				   struct encoder_packet *packet)
 {
@@ -258,6 +270,7 @@ static inline bool get_next_packet(struct rtmp_stream *stream,
 	return new_packet;
 }
 
+// 获取下一个数据，不从队列中删除
 static inline void peek_next_packet(struct rtmp_stream *stream,
 				    struct encoder_packet *packet)
 {
@@ -267,6 +280,7 @@ static inline void peek_next_packet(struct rtmp_stream *stream,
 	pthread_mutex_unlock(&stream->packets_mutex);
 }
 
+// 服务端发送重连，把之前的数据放回队列
 static void reinsert_packet_at_front(struct rtmp_stream *stream,
 				     struct encoder_packet *packet)
 {
@@ -287,6 +301,7 @@ static bool process_recv_data(struct rtmp_stream *stream, size_t size)
 	RTMP *rtmp = &stream->rtmp;
 	RTMPPacket packet = {0};
 
+	// 读取数据
 	if (!RTMP_ReadPacket(rtmp, &packet)) {
 #ifdef _WIN32
 		int error = WSAGetLastError();
@@ -392,6 +407,7 @@ static int socket_queue_data(RTMPSockBuf *sb, const char *data, int len,
 
 retry_send:
 
+	// rtmp 是否已经连接
 	if (!RTMP_IsConnected(&stream->rtmp))
 		return 0;
 
@@ -457,7 +473,7 @@ static int send_packet(struct rtmp_stream *stream,
 #ifdef TEST_FRAMEDROPS
 	droptest_cap_data_rate(stream, size);
 #endif
-
+	// 发送数据
 	ret = RTMP_Write(&stream->rtmp, (char *)data, (int)size, 0);
 	bfree(data);
 
@@ -473,6 +489,7 @@ static int send_packet(struct rtmp_stream *stream,
 
 static inline bool send_headers(struct rtmp_stream *stream);
 
+// 是否可以关闭 stream
 static inline bool can_shutdown_stream(struct rtmp_stream *stream,
 				       struct encoder_packet *packet)
 {
@@ -486,6 +503,7 @@ static inline bool can_shutdown_stream(struct rtmp_stream *stream,
 	return timeout || packet->sys_dts_usec >= (int64_t)stream->stop_ts;
 }
 
+// 输出错误
 static void set_output_error(struct rtmp_stream *stream)
 {
 	const char *msg = NULL;
@@ -730,7 +748,7 @@ static void *send_thread(void *data)
 		RTMPSockBuf_Close(&stream->rtmp.m_sb);
 		stream->rtmp.m_sb.sb_socket = -1;
 	}
-
+	// 关闭 rtmp
 	RTMP_Close(&stream->rtmp);
 
 	/* reset bitrate on stop */
@@ -760,6 +778,7 @@ static void *send_thread(void *data)
 
 	stream->sent_headers = false;
 
+	// 编码码率重置为默认值
 	/* reset bitrate on stop */
 	if (stream->dbr_enabled) {
 		if (stream->dbr_cur_bitrate != stream->dbr_orig_bitrate) {
@@ -775,13 +794,15 @@ static void *send_thread(void *data)
 	return NULL;
 }
 
+// 发送附加的metadata
 static bool send_additional_meta_data(struct rtmp_stream *stream)
 {
 	uint8_t *meta_data;
 	size_t meta_data_size;
 	bool success = true;
-
+	// 组包 metadata
 	flv_additional_meta_data(stream->output, &meta_data, &meta_data_size);
+	// 发送数据
 	success = RTMP_Write(&stream->rtmp, (char *)meta_data,
 			     (int)meta_data_size, 0) >= 0;
 	bfree(meta_data);
@@ -789,6 +810,7 @@ static bool send_additional_meta_data(struct rtmp_stream *stream)
 	return success;
 }
 
+// 发送 meta data
 static bool send_meta_data(struct rtmp_stream *stream)
 {
 	uint8_t *meta_data;
@@ -803,6 +825,7 @@ static bool send_meta_data(struct rtmp_stream *stream)
 	return success;
 }
 
+// 发送音频头信息
 static bool send_audio_header(struct rtmp_stream *stream, size_t idx,
 			      bool *next)
 {
@@ -880,6 +903,7 @@ static int init_send(struct rtmp_stream *stream)
 
 	ret = pthread_create(&stream->send_thread, NULL, send_thread, stream);
 	if (ret != 0) {
+		// 关闭 rtmp
 		RTMP_Close(&stream->rtmp);
 		warn("Failed to create send thread");
 		return OBS_OUTPUT_ERROR;
@@ -960,6 +984,7 @@ static int init_send(struct rtmp_stream *stream)
 #endif
 
 		if (ret != 0) {
+			// 关闭 rtmp
 			RTMP_Close(&stream->rtmp);
 			warn("Failed to create socket thread");
 			return OBS_OUTPUT_ERROR;
@@ -1060,7 +1085,7 @@ static void add_connect_data(char **penc, char *pend)
 	*penc = AMF_EncodeNamedBoolean(*penc, pend, &val, true);
 }
 
-// 常识连接
+// 尝试连接
 static int try_connect(struct rtmp_stream *stream)
 {
 	if (dstr_is_empty(&stream->path)) {
@@ -1072,12 +1097,12 @@ static int try_connect(struct rtmp_stream *stream)
 
 	// free any existing RTMP TLS context
 	RTMP_TLS_Free(&stream->rtmp);
-
+	// 初始化
 	RTMP_Init(&stream->rtmp);
-
+	// 设置推流地址
 	if (!RTMP_SetupURL(&stream->rtmp, stream->path.array))
 		return OBS_OUTPUT_BAD_PATH;
-
+	// 开启发送功能
 	RTMP_EnableWrite(&stream->rtmp);
 
 	dstr_copy(&stream->encoder_name, "FMLE/3.0 (compatible; FMSc/1.0)");
@@ -1102,7 +1127,7 @@ static int try_connect(struct rtmp_stream *stream)
 			info("Binding to IPv%d", ipv6 ? 6 : 4);
 		}
 	}
-
+	// 增加流
 	RTMP_AddStream(&stream->rtmp, stream->key.array);
 
 	stream->rtmp.m_outChunkSize = 4096;
@@ -1113,11 +1138,13 @@ static int try_connect(struct rtmp_stream *stream)
 	win32_log_interface_type(stream);
 #endif
 
+	// 连接
 	if (!RTMP_Connect(&stream->rtmp, NULL)) {
 		set_output_error(stream);
 		return OBS_OUTPUT_CONNECT_FAILED;
 	}
 
+	// 连接流
 	if (!RTMP_ConnectStream(&stream->rtmp, 0))
 		return OBS_OUTPUT_INVALID_STREAM;
 
@@ -1126,6 +1153,7 @@ static int try_connect(struct rtmp_stream *stream)
 	return init_send(stream);
 }
 
+// 初始化连接
 static bool init_connect(struct rtmp_stream *stream)
 {
 	obs_service_t *service;
@@ -1169,6 +1197,7 @@ static bool init_connect(struct rtmp_stream *stream)
 	obs_data_t *vsettings = obs_encoder_get_settings(venc);
 	obs_data_t *asettings = obs_encoder_get_settings(aenc);
 
+	// 初始化 dbr
 	circlebuf_free(&stream->dbr_frames);
 	stream->audio_bitrate = (long)obs_data_get_int(asettings, "bitrate");
 	stream->dbr_data_size = 0;
@@ -1275,6 +1304,7 @@ static bool rtmp_stream_start(void *data)
 			      stream) == 0;
 }
 
+// 缓存发送包
 static inline bool add_packet(struct rtmp_stream *stream,
 			      struct encoder_packet *packet)
 {
@@ -1288,6 +1318,7 @@ static inline size_t num_buffered_packets(struct rtmp_stream *stream)
 	return stream->packets.size / sizeof(struct encoder_packet);
 }
 
+// 丢帧逻辑
 static void drop_frames(struct rtmp_stream *stream, const char *name,
 			int highest_priority, bool pframes)
 {
@@ -1334,6 +1365,7 @@ static void drop_frames(struct rtmp_stream *stream, const char *name,
 #endif
 }
 
+// 找到第一个视频包
 static bool find_first_video_packet(struct rtmp_stream *stream,
 				    struct encoder_packet *first)
 {
@@ -1446,6 +1478,7 @@ static void dbr_inc_bitrate(struct rtmp_stream *stream)
 	}
 }
 
+// 检测是否丢帧
 static void check_to_drop_frames(struct rtmp_stream *stream, bool pframes)
 {
 	struct encoder_packet first;
@@ -1520,6 +1553,7 @@ static void check_to_drop_frames(struct rtmp_stream *stream, bool pframes)
 	}
 }
 
+// 缓存视频帧，如果优先级低于丢帧的优先级，则丢弃
 static bool add_video_packet(struct rtmp_stream *stream,
 			     struct encoder_packet *packet)
 {
@@ -1649,6 +1683,7 @@ static int rtmp_stream_dropped_frames(void *data)
 	return stream->dropped_frames;
 }
 
+// 拥塞检测
 static float rtmp_stream_congestion(void *data)
 {
 	struct rtmp_stream *stream = data;
@@ -1660,6 +1695,7 @@ static float rtmp_stream_congestion(void *data)
 		return stream->min_priority > 0 ? 1.0f : stream->congestion;
 }
 
+// 连接时间
 static int rtmp_stream_connect_time(void *data)
 {
 	struct rtmp_stream *stream = data;
