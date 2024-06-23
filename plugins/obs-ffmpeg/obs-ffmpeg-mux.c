@@ -31,6 +31,7 @@
 #define warn(format, ...) do_log(LOG_WARNING, format, ##__VA_ARGS__)
 #define info(format, ...) do_log(LOG_INFO, format, ##__VA_ARGS__)
 
+// 获取名字
 static const char *ffmpeg_mux_getname(void *type)
 {
 	UNUSED_PARAMETER(type);
@@ -93,6 +94,7 @@ static void split_file_proc(void *data, calldata_t *cd)
 	os_atomic_set_bool(&stream->manual_split, true);
 }
 
+// 创建 mux
 static void *ffmpeg_mux_create(obs_data_t *settings, obs_output_t *output)
 {
 	struct ffmpeg_muxer *stream = bzalloc(sizeof(*stream));
@@ -324,10 +326,13 @@ static void build_command_line(struct ffmpeg_muxer *stream, struct dstr *cmd,
 	add_muxer_params(cmd, stream);
 }
 
+// 启动进程，创建管道
 void start_pipe(struct ffmpeg_muxer *stream, const char *path)
 {
 	struct dstr cmd;
+	// 构成创建进程参数
 	build_command_line(stream, &cmd, path);
+	// 启动 obs-ffmpeg-mux.exe 进程
 	stream->pipe = os_process_pipe_create(cmd.array, "w");
 	dstr_free(&cmd);
 }
@@ -397,6 +402,7 @@ static inline void update_encoder_settings(struct ffmpeg_muxer *stream,
 	if (ext && strcmp(ext, ".m3u8") == 0) {
 		obs_data_t *settings = obs_encoder_get_settings(vencoder);
 		obs_data_set_bool(settings, "repeat_headers", true);
+		// 更新编码器配置
 		obs_encoder_update(vencoder, settings);
 		obs_data_release(settings);
 	}
@@ -411,6 +417,7 @@ static inline bool ffmpeg_mux_start_internal(struct ffmpeg_muxer *stream,
 
 	if (!obs_output_can_begin_data_capture(stream->output, 0))
 		return false;
+	// 初始化编码器
 	if (!obs_output_initialize_encoders(stream->output, 0))
 		return false;
 
@@ -452,6 +459,7 @@ static inline bool ffmpeg_mux_start_internal(struct ffmpeg_muxer *stream,
 		os_unlink(path);
 	}
 
+	// 启动进程，创建管道
 	start_pipe(stream, path);
 
 	if (!stream->pipe) {
@@ -474,7 +482,7 @@ static inline bool ffmpeg_mux_start_internal(struct ffmpeg_muxer *stream,
 static bool ffmpeg_mux_start(void *data)
 {
 	struct ffmpeg_muxer *stream = data;
-
+	// 获取配置
 	obs_data_t *settings = obs_output_get_settings(stream->output);
 	bool success = ffmpeg_mux_start_internal(stream, settings);
 	obs_data_release(settings);
@@ -635,6 +643,7 @@ static void generate_filename(struct ffmpeg_muxer *stream, struct dstr *dst,
 	obs_data_release(settings);
 }
 
+// 写数据
 bool write_packet(struct ffmpeg_muxer *stream, struct encoder_packet *packet)
 {
 	bool is_video = packet->type == OBS_ENCODER_VIDEO;
@@ -657,7 +666,7 @@ bool write_packet(struct ffmpeg_muxer *stream, struct encoder_packet *packet)
 			info.pts -= stream->audio_dts_offsets[info.index];
 		}
 	}
-
+	// 先写如类型，再写入数据
 	ret = os_process_pipe_write(stream->pipe, (const uint8_t *)&info,
 				    sizeof(info));
 	if (ret != sizeof(info)) {
@@ -875,6 +884,7 @@ static void ffmpeg_mux_data(void *data, struct encoder_packet *packet)
 		}
 	}
 
+	// 写入数据
 	if (stream->split_file && stream->split_file_ready) {
 		for (size_t i = 0; i < stream->mux_packets.num; i++) {
 			struct encoder_packet *pkt =
@@ -911,6 +921,7 @@ uint64_t ffmpeg_mux_total_bytes(void *data)
 	return stream->total_bytes;
 }
 
+// 录制结构体
 struct obs_output_info ffmpeg_muxer = {
 	.id = "ffmpeg_muxer",
 	.flags = OBS_OUTPUT_AV | OBS_OUTPUT_ENCODED | OBS_OUTPUT_MULTI_TRACK |

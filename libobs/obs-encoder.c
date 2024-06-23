@@ -460,6 +460,7 @@ static inline bool obs_encoder_initialize_internal(obs_encoder_t *encoder)
 	if (encoder->orig_info.create) {
 		can_reroute = true;
 		encoder->info = encoder->orig_info;
+		// 重新创建视频编码器
 		encoder->context.data = encoder->orig_info.create(
 			encoder->context.settings, encoder);
 		can_reroute = false;

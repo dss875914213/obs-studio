@@ -323,6 +323,7 @@ static void ffmpeg_log_callback(void *param, int level, const char *format,
 	UNUSED_PARAMETER(param);
 }
 
+// 解析数据
 static bool init_params(int *argc, char ***argv, struct main_params *params,
 			struct audio_params **p_audio)
 {
@@ -576,6 +577,7 @@ static void create_audio_stream(struct ffmpeg_mux *ffm, int idx)
 	ffm->num_audio_streams++;
 }
 
+// 初始化流信息
 static bool init_streams(struct ffmpeg_mux *ffm)
 {
 	if (ffm->params.has_video)
@@ -613,6 +615,8 @@ static void ffmpeg_mux_header(struct ffmpeg_mux *ffm, uint8_t *data,
 	}
 }
 
+
+// 读取数据
 static size_t safe_read(void *vdata, size_t size)
 {
 	uint8_t *data = vdata;
@@ -673,6 +677,7 @@ static inline bool ffmpeg_mux_get_extra_data(struct ffmpeg_mux *ffm)
 
 #define CHUNK_SIZE 1048576
 
+// ffmpeg 写线程
 static void *ffmpeg_mux_io_thread(void *data)
 {
 	struct ffmpeg_mux *ffm = data;
@@ -845,6 +850,7 @@ static int64_t ffmpeg_mux_seek_av_buffer(void *opaque, int64_t offset,
 	return 0;
 }
 
+// 重载 ffmpeg io write 函数
 static int ffmpeg_mux_write_av_buffer(void *opaque, uint8_t *buf, int buf_size)
 {
 	struct ffmpeg_mux *ffm = opaque;
@@ -874,6 +880,7 @@ static int ffmpeg_mux_write_av_buffer(void *opaque, uint8_t *buf, int buf_size)
 	header.data_length = buf_size;
 	header.seek_offset = ffm->io.next_pos;
 
+	// 数据缓存到 io 队列中
 	// Copy the data into the buffer
 	circlebuf_push_back(&ffm->io.data, &header, sizeof(header));
 	circlebuf_push_back(&ffm->io.data, buf, buf_size);
@@ -947,6 +954,7 @@ static inline int open_output_file(struct ffmpeg_mux *ffm)
 			unsigned char *avio_ctx_buffer =
 				av_malloc(AVIO_BUFFER_SIZE);
 
+			// 重载 write 和 seek 函数
 			ffm->output->pb = avio_alloc_context(
 				avio_ctx_buffer, AVIO_BUFFER_SIZE, 1, ffm, NULL,
 				ffmpeg_mux_write_av_buffer,
@@ -985,6 +993,7 @@ static inline int open_output_file(struct ffmpeg_mux *ffm)
 		printf("\n");
 	}
 
+	// 写入头信息
 	ret = avformat_write_header(ffm->output, &dict);
 	if (ret < 0) {
 		fprintf(stderr, "Error opening '%s': %s",
@@ -1035,6 +1044,7 @@ static int ffmpeg_mux_init_context(struct ffmpeg_mux *ffm)
 	       output_format->long_name ? output_format->long_name : "unknown");
 #endif
 
+	// 创建上下文
 	ret = avformat_alloc_output_context2(&ffm->output, output_format, NULL,
 					     ffm->params.file);
 	if (ret < 0) {
@@ -1048,6 +1058,7 @@ static int ffmpeg_mux_init_context(struct ffmpeg_mux *ffm)
 	ffm->output->oformat->audio_codec = AV_CODEC_ID_NONE;
 #endif
 
+	// 初始化流信息
 	if (!init_streams(ffm)) {
 		free_avformat(ffm);
 		return FFM_ERROR;
@@ -1067,6 +1078,7 @@ static int ffmpeg_mux_init_internal(struct ffmpeg_mux *ffm, int argc,
 {
 	argc--;
 	argv++;
+	// 解析数据
 	if (!init_params(&argc, &argv, &ffm->params, &ffm->audio))
 		return FFM_ERROR;
 
@@ -1089,6 +1101,7 @@ static int ffmpeg_mux_init_internal(struct ffmpeg_mux *ffm, int argc,
 	return ffmpeg_mux_init_context(ffm);
 }
 
+// 初始化
 static int ffmpeg_mux_init(struct ffmpeg_mux *ffm, int argc, char *argv[])
 {
 	int ret = ffmpeg_mux_init_internal(ffm, argc, argv);
@@ -1149,6 +1162,7 @@ static inline int64_t rescale_ts(struct ffmpeg_mux *ffm,
 				AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX);
 }
 
+// 通过 ffmpeg 写入数据
 static inline bool ffmpeg_mux_packet(struct ffmpeg_mux *ffm, uint8_t *buf,
 				     struct ffm_packet_info *info)
 {
@@ -1170,7 +1184,7 @@ static inline bool ffmpeg_mux_packet(struct ffmpeg_mux *ffm, uint8_t *buf,
 
 	if (info->keyframe)
 		ffm->packet->flags = AV_PKT_FLAG_KEY;
-
+	// 写数据
 	int ret = av_interleaved_write_frame(ffm->output, ffm->packet);
 
 	/* Treat "Invalid data found when processing input" and "Invalid argument" as non-fatal */

@@ -2088,6 +2088,7 @@ static inline void pair_encoders(obs_output_t *output, size_t num_mixes)
 	}
 }
 
+// 初始化编码器
 bool obs_output_initialize_encoders(obs_output_t *output, uint32_t flags)
 {
 	bool encoded, has_video, has_audio, has_service;
