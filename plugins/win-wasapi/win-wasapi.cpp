@@ -161,25 +161,26 @@ class WASAPISource {
 
 	obs_source_t *source;
 	wstring default_id;
-	string device_id;
+	string device_id; // 设备 id
 	string device_name;
 	WinModule mmdevapi_module;
+	// 加载的函数
 	PFN_ActivateAudioInterfaceAsync activate_audio_interface_async = NULL;
 	PFN_RtwqUnlockWorkQueue rtwq_unlock_work_queue = NULL;
 	PFN_RtwqLockSharedWorkQueue rtwq_lock_shared_work_queue = NULL;
 	PFN_RtwqCreateAsyncResult rtwq_create_async_result = NULL;
 	PFN_RtwqPutWorkItem rtwq_put_work_item = NULL;
 	PFN_RtwqPutWaitingWorkItem rtwq_put_waiting_work_item = NULL;
-	bool rtwq_supported = false;
-	window_priority priority;
+	bool rtwq_supported = false; // 是否支持 rtwq 模式
+	window_priority priority; // 
 	string window_class;
 	string title;
 	string executable;
 	HWND hwnd = NULL;
 	DWORD process_id = 0;
-	const SourceType sourceType;
-	std::atomic<bool> useDeviceTiming = false;
-	std::atomic<bool> isDefaultDevice = false;
+	const SourceType sourceType; // 源类型
+	std::atomic<bool> useDeviceTiming = false; // 使用设备时间戳
+	std::atomic<bool> isDefaultDevice = false; // 是否默认设备
 
 	bool previouslyFailed = false;
 	WinHandle reconnectThread = NULL;
@@ -368,14 +369,17 @@ WASAPISource::WASAPISource(obs_data_t *settings, obs_source_t *source_,
 	  sampleReady(this),
 	  restart(this)
 {
+	// 加载对应 dll
 	mmdevapi_module = LoadLibrary(L"Mmdevapi");
 	if (mmdevapi_module) {
+		// 加载对应函数
 		activate_audio_interface_async =
 			(PFN_ActivateAudioInterfaceAsync)GetProcAddress(
 				mmdevapi_module, "ActivateAudioInterfaceAsync");
 	}
-
+	// 更新参数
 	UpdateSettings(BuildUpdateParams(settings));
+	// 打印日志
 	LogSettings();
 
 	idleSignal = CreateEvent(nullptr, true, false, nullptr);
@@ -410,6 +414,7 @@ WASAPISource::WASAPISource(obs_data_t *settings, obs_source_t *source_,
 	if (!reconnectSignal.Valid())
 		throw "Could not create reconnect signal";
 
+	// 设置通知事件，当默认设备切换后，音频源可以感知到
 	notify = new WASAPINotify(this);
 	if (!notify)
 		throw "Could not create WASAPINotify";
@@ -561,6 +566,7 @@ WASAPISource::~WASAPISource()
 	Stop();
 }
 
+// 读取 setting 参数，构建 params
 WASAPISource::UpdateParams WASAPISource::BuildUpdateParams(obs_data_t *settings)
 {
 	WASAPISource::UpdateParams params;
@@ -610,6 +616,7 @@ void WASAPISource::UpdateSettings(UpdateParams &&params)
 	executable = std::move(params.executable);
 }
 
+// 打印日志信息
 void WASAPISource::LogSettings()
 {
 	if (sourceType == SourceType::ProcessOutput) {
@@ -631,6 +638,7 @@ void WASAPISource::LogSettings()
 	}
 }
 
+// 更新参数
 void WASAPISource::Update(obs_data_t *settings)
 {
 	UpdateParams params = BuildUpdateParams(settings);
@@ -687,6 +695,7 @@ void WASAPISource::Deactivate()
 	}
 }
 
+// 获取音频设备 
 ComPtr<IMMDevice> WASAPISource::InitDevice(IMMDeviceEnumerator *enumerator,
 					   bool isDefaultDevice,
 					   SourceType type,
@@ -694,6 +703,7 @@ ComPtr<IMMDevice> WASAPISource::InitDevice(IMMDeviceEnumerator *enumerator,
 {
 	ComPtr<IMMDevice> device;
 
+	// 默认设备
 	if (isDefaultDevice) {
 		const bool input = type == SourceType::Input;
 		HRESULT res = enumerator->GetDefaultAudioEndpoint(
@@ -815,11 +825,13 @@ ComPtr<IAudioClient> WASAPISource::InitClient(
 
 		pFormat = &wf;
 	} else {
+		// 激活设备
 		res = device->Activate(__uuidof(IAudioClient), CLSCTX_ALL,
 				       nullptr, (void **)client.Assign());
 		if (FAILED(res))
 			throw HRError("Failed to activate client context", res);
 
+		// 获取音频格式
 		res = client->GetMixFormat(&wfex);
 		if (FAILED(res))
 			throw HRError("Failed to get mix format", res);
@@ -832,6 +844,7 @@ ComPtr<IAudioClient> WASAPISource::InitClient(
 	DWORD flags = AUDCLNT_STREAMFLAGS_EVENTCALLBACK;
 	if (type != SourceType::Input)
 		flags |= AUDCLNT_STREAMFLAGS_LOOPBACK;
+	// 共享模式
 	res = client->Initialize(AUDCLNT_SHAREMODE_SHARED, flags,
 				 BUFFER_TIME_100NS, 0, pFormat, nullptr);
 	if (FAILED(res))
@@ -927,10 +940,12 @@ ComPtr<IAudioCaptureClient> WASAPISource::InitCapture(IAudioClient *client,
 	if (FAILED(res))
 		throw HRError("Failed to create capture context", res);
 
+	// 设置收到数据的事件
 	res = client->SetEventHandle(receiveSignal);
 	if (FAILED(res))
 		throw HRError("Failed to set event handle", res);
 
+	// 开启设备
 	res = client->Start();
 	if (FAILED(res))
 		throw HRError("Failed to start capture client", res);
@@ -971,6 +986,7 @@ void WASAPISource::Initialize()
 		speakers, format, sampleRate);
 	if (sourceType == SourceType::DeviceOutput)
 		ClearBuffer(device);
+	// 获取 capture, 后面收到信号到 capture 中获取数据
 	ComPtr<IAudioCaptureClient> temp_capture =
 		InitCapture(temp_client, receiveSignal);
 
@@ -1067,6 +1083,7 @@ DWORD WINAPI WASAPISource::ReconnectThread(LPVOID param)
 	return 0;
 }
 
+// 处理获取的音频数据
 bool WASAPISource::ProcessCaptureData()
 {
 	HRESULT res;
@@ -1084,6 +1101,7 @@ bool WASAPISource::ProcessCaptureData()
 			return false;
 		}
 
+		// 获取下一个音频包的大小
 		res = capture->GetNextPacketSize(&captureSize);
 		if (FAILED(res)) {
 			if (res != AUDCLNT_E_DEVICE_INVALIDATED)
@@ -1094,10 +1112,11 @@ bool WASAPISource::ProcessCaptureData()
 				     res);
 			return false;
 		}
-
+		// 取完数据退出
 		if (!captureSize)
 			break;
 
+		// 获取音频包，加锁，防止另外一个进程写入数据
 		res = capture->GetBuffer(&buffer, &frames, &flags, &pos, &ts);
 		if (FAILED(res)) {
 			if (res != AUDCLNT_E_DEVICE_INVALIDATED)
@@ -1130,8 +1149,9 @@ bool WASAPISource::ProcessCaptureData()
 					sampleRate);
 		}
 
+		// 输出音频数据
 		obs_source_output_audio(source, &data);
-
+		// 释放 buffer
 		capture->ReleaseBuffer(frames);
 	}
 
@@ -1140,10 +1160,12 @@ bool WASAPISource::ProcessCaptureData()
 
 #define RECONNECT_INTERVAL 3000
 
+// 捕获线程
 DWORD WINAPI WASAPISource::CaptureThread(LPVOID param)
 {
 	os_set_thread_name("win-wasapi: capture thread");
 
+	// 初始化 com
 	const HRESULT hr = CoInitializeEx(0, COINIT_MULTITHREADED);
 	const bool com_initialized = SUCCEEDED(hr);
 	if (!com_initialized) {
@@ -1186,7 +1208,7 @@ DWORD WINAPI WASAPISource::CaptureThread(LPVOID param)
 				 (source->sourceType != SourceType::Input))
 					? 10
 					: INFINITE;
-
+			// 等待信号量
 			const DWORD ret = WaitForMultipleObjects(
 				sig_count, sigs, false, dwMilliseconds);
 			switch (ret) {
@@ -1202,8 +1224,9 @@ DWORD WINAPI WASAPISource::CaptureThread(LPVOID param)
 				idle = true;
 				break;
 
-			case WAIT_OBJECT_0 + 2:
+			case WAIT_OBJECT_0 + 2: // 接收到数据
 			case WAIT_TIMEOUT:
+				// 未初始化
 				if (sigs == inactive_sigs) {
 					assert(ret != WAIT_TIMEOUT);
 
@@ -1309,6 +1332,7 @@ void WASAPISource::SetDefaultDevice(EDataFlow flow, ERole role, LPCWSTR id)
 	SetEvent(restartSignal);
 }
 
+// 开始捕获
 void WASAPISource::OnStartCapture()
 {
 	const DWORD ret = WaitForSingleObject(stopSignal, 0);
@@ -1333,6 +1357,7 @@ void WASAPISource::OnStartCapture()
 	}
 }
 
+// 数据准备好了
 void WASAPISource::OnSampleReady()
 {
 	bool stop = false;
@@ -1395,6 +1420,7 @@ void WASAPISource::OnRestart()
 
 /* ------------------------------------------------------------------------- */
 
+// 名字
 static const char *GetWASAPIInputName(void *)
 {
 	return obs_module_text("AudioInput");
@@ -1436,6 +1462,7 @@ static void *CreateWASAPISource(obs_data_t *settings, obs_source_t *source,
 	return nullptr;
 }
 
+// 创建音频设备
 static void *CreateWASAPIInput(obs_data_t *settings, obs_source_t *source)
 {
 	return CreateWASAPISource(settings, source, SourceType::Input);
