@@ -17,6 +17,7 @@
 
 #include "d3d11-subsystem.hpp"
 
+// 初始化缓存
 void gs_index_buffer::InitBuffer()
 {
 	HRESULT hr;

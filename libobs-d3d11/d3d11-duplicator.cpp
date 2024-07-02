@@ -18,6 +18,7 @@
 #include "d3d11-subsystem.hpp"
 #include <unordered_map>
 
+// 枚举对应显卡上插的默认显示器
 static inline bool get_monitor(gs_device_t *device, int monitor_idx,
 			       IDXGIOutput **dxgiOutput)
 {
@@ -46,6 +47,7 @@ void gs_duplicator::Start()
 
 	hr = output->QueryInterface(IID_PPV_ARGS(output5.Assign()));
 	if (SUCCEEDED(hr)) {
+		// 指定返回的格式
 		constexpr DXGI_FORMAT supportedFormats[]{
 			DXGI_FORMAT_R16G16B16A16_FLOAT,
 			DXGI_FORMAT_B8G8R8A8_UNORM,
@@ -85,6 +87,7 @@ gs_duplicator::~gs_duplicator()
 
 extern "C" {
 
+// 获取显示器信息
 EXPORT bool device_get_duplicator_monitor_info(gs_device_t *device,
 					       int monitor_idx,
 					       struct gs_monitor_info *info)
@@ -110,6 +113,7 @@ EXPORT bool device_get_duplicator_monitor_info(gs_device_t *device,
 		return false;
 	}
 
+	// 旋转角度
 	switch (desc.Rotation) {
 	case DXGI_MODE_ROTATION_UNSPECIFIED:
 	case DXGI_MODE_ROTATION_IDENTITY:
@@ -137,6 +141,7 @@ EXPORT bool device_get_duplicator_monitor_info(gs_device_t *device,
 	return true;
 }
 
+// 搜索 monitor 是第几个显示器
 EXPORT int device_duplicator_get_monitor_index(gs_device_t *device,
 					       void *monitor)
 {
@@ -187,6 +192,7 @@ void reset_duplicators(void)
 	}
 }
 
+// 创建显示器，并放到队列中
 EXPORT gs_duplicator_t *device_duplicator_create(gs_device_t *device,
 						 int monitor_idx)
 {
@@ -216,6 +222,7 @@ EXPORT gs_duplicator_t *device_duplicator_create(gs_device_t *device,
 	return duplicator;
 }
 
+// 引用减一
 EXPORT void gs_duplicator_destroy(gs_duplicator_t *duplicator)
 {
 	if (--duplicator->refs == 0) {
@@ -224,6 +231,7 @@ EXPORT void gs_duplicator_destroy(gs_duplicator_t *duplicator)
 	}
 }
 
+// 把纹理拷贝到 d 的纹理中
 static inline void copy_texture(gs_duplicator_t *d, ID3D11Texture2D *tex)
 {
 	D3D11_TEXTURE2D_DESC desc;
@@ -244,6 +252,7 @@ static inline void copy_texture(gs_duplicator_t *d, ID3D11Texture2D *tex)
 		d->device->context->CopyResource(d->texture->texture, tex);
 }
 
+// 获取 duplicator 最新纹理
 EXPORT bool gs_duplicator_update_frame(gs_duplicator_t *d)
 {
 	DXGI_OUTDUPL_FRAME_INFO info;
@@ -290,6 +299,7 @@ EXPORT bool gs_duplicator_update_frame(gs_duplicator_t *d)
 	return true;
 }
 
+// 获取最新数据
 EXPORT gs_texture_t *gs_duplicator_get_texture(gs_duplicator_t *duplicator)
 {
 	return duplicator->texture;

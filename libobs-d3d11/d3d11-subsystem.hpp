@@ -50,6 +50,7 @@ using namespace std;
  * "public" and "private" does not matter at all for this subproject.
  */
 
+// 得到 win 版本
 static inline uint32_t GetWinVer()
 {
 	struct win_version_info ver;
@@ -58,6 +59,7 @@ static inline uint32_t GetWinVer()
 	return (ver.major << 8) | ver.minor;
 }
 
+// 类型转换
 static inline DXGI_FORMAT ConvertGSTextureFormatResource(gs_color_format format)
 {
 	switch (format) {
@@ -343,6 +345,7 @@ struct VBDataPtr {
 	inline ~VBDataPtr() { gs_vbdata_destroy(data); }
 };
 
+// gs 资源类型
 enum class gs_type {
 	gs_vertex_buffer,
 	gs_index_buffer,
@@ -371,6 +374,7 @@ struct gs_obj {
 	virtual ~gs_obj();
 };
 
+// 顶点 buffer
 struct gs_vertex_buffer : gs_obj {
 	ComPtr<ID3D11Buffer> vertexBuffer;
 	ComPtr<ID3D11Buffer> normalBuffer;
@@ -416,6 +420,7 @@ struct DataPtr {
 	inline ~DataPtr() { bfree(data); }
 };
 
+// 索引 buffer
 struct gs_index_buffer : gs_obj {
 	ComPtr<ID3D11Buffer> indexBuffer;
 	bool dynamic;
@@ -462,6 +467,7 @@ struct gs_timer_range : gs_obj {
 	gs_timer_range(gs_device_t *device);
 };
 
+// 纹理
 struct gs_texture : gs_obj {
 	gs_texture_type type;
 	uint32_t levels;
@@ -497,6 +503,7 @@ struct gs_texture : gs_obj {
 	}
 };
 
+// 2d 纹理
 struct gs_texture_2d : gs_texture {
 	ComPtr<ID3D11Texture2D> texture;
 	ComPtr<ID3D11RenderTargetView> renderTarget[6];
@@ -658,6 +665,7 @@ struct gs_stage_surface : gs_obj {
 			 bool p010);
 };
 
+// 着色器采样器
 struct gs_sampler_state : gs_obj {
 	ComPtr<ID3D11SamplerState> state;
 	D3D11_SAMPLER_DESC sd = {};
@@ -670,6 +678,7 @@ struct gs_sampler_state : gs_obj {
 	gs_sampler_state(gs_device_t *device, const gs_sampler_info *info);
 };
 
+// shader 参数
 struct gs_shader_param {
 	string name;
 	gs_shader_param_type type;
@@ -688,6 +697,7 @@ struct gs_shader_param {
 	gs_shader_param(shader_var &var, uint32_t &texCounter);
 };
 
+// 着色器错误码
 struct ShaderError {
 	ComPtr<ID3D10Blob> errors;
 	HRESULT hr;
@@ -698,22 +708,23 @@ struct ShaderError {
 	}
 };
 
+// 着色器
 struct gs_shader : gs_obj {
-	gs_shader_type type;
-	vector<gs_shader_param> params;
-	ComPtr<ID3D11Buffer> constants;
-	size_t constantSize;
+	gs_shader_type type; // shader 类型
+	vector<gs_shader_param> params; // shader 变参数
+	ComPtr<ID3D11Buffer> constants; // 常量缓存
+	size_t constantSize; // 常量大小
 
-	D3D11_BUFFER_DESC bd = {};
-	vector<uint8_t> data;
+	D3D11_BUFFER_DESC bd = {}; // buffer 描述类
+	vector<uint8_t> data; // 数据
 
 	inline void UpdateParam(vector<uint8_t> &constData,
-				gs_shader_param &param, bool &upload);
-	void UploadParams();
+				gs_shader_param &param, bool &upload); // 更新参数具体实现
+	void UploadParams();// 更新参数
 
-	void BuildConstantBuffer();
+	void BuildConstantBuffer(); // 构建常量缓存
 	void Compile(const char *shaderStr, const char *file,
-		     const char *target, ID3D10Blob **shader);
+		     const char *target, ID3D10Blob **shader); // 编译
 
 	inline gs_shader(gs_device_t *device, gs_type obj_type,
 			 gs_shader_type type)
@@ -724,6 +735,7 @@ struct gs_shader : gs_obj {
 	virtual ~gs_shader() {}
 };
 
+// 着色器采样器
 struct ShaderSampler {
 	string name;
 	gs_sampler_state sampler;
@@ -735,18 +747,19 @@ struct ShaderSampler {
 	}
 };
 
+// 顶点着色器
 struct gs_vertex_shader : gs_shader {
-	ComPtr<ID3D11VertexShader> shader;
-	ComPtr<ID3D11InputLayout> layout;
+	ComPtr<ID3D11VertexShader> shader; // 着色器
+	ComPtr<ID3D11InputLayout> layout; // 输入布局
 
-	gs_shader_param *world, *viewProj;
+	gs_shader_param *world, *viewProj; // 变换矩阵
 
-	vector<D3D11_INPUT_ELEMENT_DESC> layoutData;
+	vector<D3D11_INPUT_ELEMENT_DESC> layoutData; // 布局数据
 
-	bool hasNormals;
-	bool hasColors;
-	bool hasTangents;
-	uint32_t nTexUnits;
+	bool hasNormals; // 是否有法线
+	bool hasColors; // 是否有颜色
+	bool hasTangents; // 是否有切线
+	uint32_t nTexUnits; // 纹理个数
 
 	void Rebuild(ID3D11Device *dev);
 
@@ -757,6 +770,7 @@ struct gs_vertex_shader : gs_shader {
 		constants.Release();
 	}
 
+	// 预期的 buffer 数量
 	inline uint32_t NumBuffersExpected() const
 	{
 		uint32_t count = nTexUnits + 1;
@@ -778,10 +792,10 @@ struct gs_vertex_shader : gs_shader {
 
 struct gs_duplicator : gs_obj {
 	ComPtr<IDXGIOutputDuplication> duplicator;
-	gs_texture_2d *texture;
+	gs_texture_2d *texture; // 保存 duplicator 最新帧
 	int idx;
 	long refs;
-	bool updated;
+	bool updated; // 纹理是否更新
 
 	void Start();
 
@@ -791,9 +805,10 @@ struct gs_duplicator : gs_obj {
 	~gs_duplicator();
 };
 
+// 像素着色器
 struct gs_pixel_shader : gs_shader {
-	ComPtr<ID3D11PixelShader> shader;
-	vector<unique_ptr<ShaderSampler>> samplers;
+	ComPtr<ID3D11PixelShader> shader; // 着色器
+	vector<unique_ptr<ShaderSampler>> samplers; // 采样器
 
 	void Rebuild(ID3D11Device *dev);
 
@@ -816,6 +831,7 @@ struct gs_pixel_shader : gs_shader {
 			const char *shaderString);
 };
 
+// 交换链
 struct gs_swap_chain : gs_obj {
 	HWND hwnd;
 	gs_init_data initData;
@@ -948,6 +964,7 @@ struct SavedZStencilState : ZStencilState {
 	}
 };
 
+// 光栅化
 struct RasterState {
 	gs_cull_mode cullMode;
 	bool scissorEnabled;
@@ -960,6 +977,7 @@ struct RasterState {
 	}
 };
 
+// 保存的光栅化
 struct SavedRasterState : RasterState {
 	ComPtr<ID3D11RasterizerState> state;
 	D3D11_RASTERIZER_DESC rd;
@@ -979,6 +997,7 @@ struct mat4float {
 	float mat[16];
 };
 
+// 显示器颜色信息
 struct gs_monitor_color_info {
 	bool hdr;
 	UINT bits_per_color;
@@ -989,6 +1008,7 @@ struct gs_monitor_color_info {
 	}
 };
 
+// 设备
 struct gs_device {
 	ComPtr<IDXGIFactory1> factory;
 	ComPtr<IDXGIAdapter1> adapter;
@@ -1013,7 +1033,7 @@ struct gs_device {
 	gs_swap_chain *curSwapChain = nullptr;
 
 	gs_vertex_buffer *lastVertexBuffer = nullptr;
-	gs_vertex_shader *lastVertexShader = nullptr;
+	gs_vertex_shader *lastVertexShader = nullptr; // 上一个着色器
 
 	bool zstencilStateChanged = true;
 	bool rasterStateChanged = true;

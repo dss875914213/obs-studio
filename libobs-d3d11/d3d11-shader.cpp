@@ -22,6 +22,7 @@
 #include <graphics/matrix3.h>
 #include <graphics/matrix4.h>
 
+// 解析 input 数据，看是否有法线，切线，颜色和纹理
 void gs_vertex_shader::GetBuffersExpected(
 	const vector<D3D11_INPUT_ELEMENT_DESC> &inputs)
 {
@@ -46,6 +47,7 @@ gs_vertex_shader::gs_vertex_shader(gs_device_t *device, const char *file,
 	  hasTangents(false),
 	  nTexUnits(0)
 {
+	// shader 处理类，解析传入的参数
 	ShaderProcessor processor(device);
 	ComPtr<ID3D10Blob> shaderBlob;
 	string outputString;
@@ -78,6 +80,7 @@ gs_vertex_shader::gs_vertex_shader(gs_device_t *device, const char *file,
 			throw HRError("Failed to create input layout", hr);
 	}
 
+	// 从 shader 中获取参数
 	viewProj = gs_shader_get_param_by_name(this, "ViewProj");
 	world = gs_shader_get_param_by_name(this, "World");
 }
@@ -131,6 +134,7 @@ gs_pixel_shader::gs_pixel_shader(gs_device_t *device, const char *file,
  * buffer, we must take this in to account.
  */
 
+// 构建常量 buffer
 void gs_shader::BuildConstantBuffer()
 {
 	for (size_t i = 0; i < params.size(); i++) {
@@ -200,6 +204,7 @@ void gs_shader::BuildConstantBuffer()
 		gs_shader_set_default(&params[i]);
 }
 
+// 编译 shader
 void gs_shader::Compile(const char *shaderString, const char *file,
 			const char *target, ID3D10Blob **shader)
 {
@@ -209,6 +214,7 @@ void gs_shader::Compile(const char *shaderString, const char *file,
 	if (!shaderString)
 		throw "No shader string specified";
 
+	// -DSS 把这边的 D3D10_SHADER_OPTIMIZATION_LEVEL1 改成 D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION 可以调试 shader 源码
 	hr = device->d3dCompile(shaderString, strlen(shaderString), file, NULL,
 				NULL, "main", target,
 				D3D10_SHADER_OPTIMIZATION_LEVEL1, 0, shader,
@@ -238,6 +244,7 @@ void gs_shader::Compile(const char *shaderString, const char *file,
 #endif
 }
 
+// 更新常量、纹理和采样器
 inline void gs_shader::UpdateParam(vector<uint8_t> &constData,
 				   gs_shader_param &param, bool &upload)
 {
@@ -265,13 +272,14 @@ inline void gs_shader::UpdateParam(vector<uint8_t> &constData,
 	} else if (param.curValue.size() == sizeof(struct gs_shader_texture)) {
 		struct gs_shader_texture shader_tex;
 		memcpy(&shader_tex, param.curValue.data(), sizeof(shader_tex));
+		// 加载纹理
 		if (shader_tex.srgb)
 			device_load_texture_srgb(device, shader_tex.tex,
 						 param.textureID);
 		else
 			device_load_texture(device, shader_tex.tex,
 					    param.textureID);
-
+		// 设置采样器
 		if (param.nextSampler) {
 			ID3D11SamplerState *state = param.nextSampler->state;
 			device->context->PSSetSamplers(param.textureID, 1,
@@ -281,6 +289,7 @@ inline void gs_shader::UpdateParam(vector<uint8_t> &constData,
 	}
 }
 
+// 更新参数
 void gs_shader::UploadParams()
 {
 	vector<uint8_t> constData;
@@ -294,6 +303,7 @@ void gs_shader::UploadParams()
 	if (constData.size() != constantSize)
 		throw "Invalid constant data size given to shader";
 
+	// 常量更新，则需要 map 到 gpu 内部
 	if (upload) {
 		D3D11_MAPPED_SUBRESOURCE map;
 		HRESULT hr;
@@ -308,6 +318,7 @@ void gs_shader::UploadParams()
 	}
 }
 
+// 销毁着色器
 void gs_shader_destroy(gs_shader_t *shader)
 {
 	if (shader && shader->device->lastVertexShader == shader)
@@ -315,16 +326,19 @@ void gs_shader_destroy(gs_shader_t *shader)
 	delete shader;
 }
 
+// 获取着色器参数大小
 int gs_shader_get_num_params(const gs_shader_t *shader)
 {
 	return (int)shader->params.size();
 }
 
+// 通过索引获取着色器参数
 gs_sparam_t *gs_shader_get_param_by_idx(gs_shader_t *shader, uint32_t param)
 {
 	return &shader->params[param];
 }
 
+// 通过名字说去着色器参数
 gs_sparam_t *gs_shader_get_param_by_name(gs_shader_t *shader, const char *name)
 {
 	for (size_t i = 0; i < shader->params.size(); i++) {
@@ -336,6 +350,7 @@ gs_sparam_t *gs_shader_get_param_by_name(gs_shader_t *shader, const char *name)
 	return NULL;
 }
 
+// 获取投影视图矩阵
 gs_sparam_t *gs_shader_get_viewproj_matrix(const gs_shader_t *shader)
 {
 	if (shader->type != GS_SHADER_VERTEX)
@@ -344,6 +359,7 @@ gs_sparam_t *gs_shader_get_viewproj_matrix(const gs_shader_t *shader)
 	return static_cast<const gs_vertex_shader *>(shader)->viewProj;
 }
 
+// 获取世界坐标转换矩阵
 gs_sparam_t *gs_shader_get_world_matrix(const gs_shader_t *shader)
 {
 	if (shader->type != GS_SHADER_VERTEX)
@@ -352,6 +368,7 @@ gs_sparam_t *gs_shader_get_world_matrix(const gs_shader_t *shader)
 	return static_cast<const gs_vertex_shader *>(shader)->world;
 }
 
+// 获取参数信息
 void gs_shader_get_param_info(const gs_sparam_t *param,
 			      struct gs_shader_param_info *info)
 {
@@ -362,6 +379,7 @@ void gs_shader_get_param_info(const gs_sparam_t *param,
 	info->type = param->type;
 }
 
+// 更新参数
 static inline void shader_setval_inline(gs_shader_param *param,
 					const void *data, size_t size)
 {
@@ -432,6 +450,7 @@ void gs_shader_set_val(gs_sparam_t *param, const void *val, size_t size)
 	shader_setval_inline(param, val, size);
 }
 
+// 设置默认值
 void gs_shader_set_default(gs_sparam_t *param)
 {
 	if (param->defaultValue.size())
@@ -439,6 +458,7 @@ void gs_shader_set_default(gs_sparam_t *param)
 				     param->defaultValue.size());
 }
 
+// 设置下一个采样器
 void gs_shader_set_next_sampler(gs_sparam_t *param, gs_samplerstate_t *sampler)
 {
 	param->nextSampler = sampler;

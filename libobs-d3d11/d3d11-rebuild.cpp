@@ -399,6 +399,7 @@ const static D3D_FEATURE_LEVEL featureLevels[] = {
 	D3D_FEATURE_LEVEL_10_0,
 };
 
+// 设备丢失，数据重建
 void gs_device::RebuildDevice()
 try {
 	ID3D11Device *dev = nullptr;
