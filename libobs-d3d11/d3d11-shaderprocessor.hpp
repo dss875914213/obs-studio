@@ -28,11 +28,11 @@ struct ShaderProcessor {
 	gs_device_t *device;
 	ShaderParser parser;
 
-	void BuildInputLayout(vector<D3D11_INPUT_ELEMENT_DESC> &inputs);
-	void BuildParams(vector<gs_shader_param> &params);
-	void BuildSamplers(vector<unique_ptr<ShaderSampler>> &samplers);
-	void BuildString(string &outputString);
-	void Process(const char *shader_string, const char *file);
+	void BuildInputLayout(vector<D3D11_INPUT_ELEMENT_DESC> &inputs); // 构建输入布局
+	void BuildParams(vector<gs_shader_param> &params); // 构建参数
+	void BuildSamplers(vector<unique_ptr<ShaderSampler>> &samplers); // 构建采样器
+	void BuildString(string &outputString); // 构建日志
+	void Process(const char *shader_string, const char *file); // 处理shader
 
 	inline ShaderProcessor(gs_device_t *device) : device(device) {}
 };

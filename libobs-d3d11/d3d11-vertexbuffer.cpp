@@ -34,6 +34,7 @@ static inline void PushBuffer(UINT *refNumBuffers, ID3D11Buffer **buffers,
 	}
 }
 
+// 更新 buffer 数据
 void gs_vertex_buffer::FlushBuffer(ID3D11Buffer *buffer, void *array,
 				   size_t elementSize)
 {
@@ -48,6 +49,7 @@ void gs_vertex_buffer::FlushBuffer(ID3D11Buffer *buffer, void *array,
 	device->context->Unmap(buffer, 0);
 }
 
+// 把成员变量放到 buffers 数组中，并输出
 UINT gs_vertex_buffer::MakeBufferList(gs_vertex_shader *shader,
 				      ID3D11Buffer **buffers, uint32_t *strides)
 {
@@ -80,6 +82,7 @@ UINT gs_vertex_buffer::MakeBufferList(gs_vertex_shader *shader,
 	return numBuffers;
 }
 
+// 创建 buffer
 void gs_vertex_buffer::InitBuffer(const size_t elementSize,
 				  const size_t numVerts, void *array,
 				  ID3D11Buffer **buffer)
@@ -102,6 +105,7 @@ void gs_vertex_buffer::InitBuffer(const size_t elementSize,
 		throw HRError("Failed to create buffer", hr);
 }
 
+// 根据 vbd 构建 buffers
 void gs_vertex_buffer::BuildBuffers()
 {
 	InitBuffer(sizeof(vec3), vbd.data->num, vbd.data->points,

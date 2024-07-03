@@ -26,6 +26,7 @@ static const char *semanticInputNames[] = {"POSITION", "NORMAL",   "COLOR",
 static const char *semanticOutputNames[] = {
 	"SV_Position", "NORMAL", "COLOR", "TANGENT", "TEXCOORD", "VERTEXID"};
 
+// 转换语义名字，从 semanticInputNames 转到 semanticOutputNames
 static const char *ConvertSemanticName(const char *name)
 {
 	const size_t num = sizeof(semanticInputNames) / sizeof(const char *);
@@ -37,6 +38,7 @@ static const char *ConvertSemanticName(const char *name)
 	throw "Unknown Semantic Name";
 }
 
+// 得到语义信息
 static void GetSemanticInfo(shader_var *var, const char *&name, uint32_t &index)
 {
 	const char *mapping = var->mapping;
@@ -51,6 +53,7 @@ static void GetSemanticInfo(shader_var *var, const char *&name, uint32_t &index)
 	name = ConvertSemanticName(nameStr.c_str());
 }
 
+// 解析语义后，构建 D3D11_INPUT_ELEMENT_DESC 数组
 static void AddInputLayoutVar(shader_var *var,
 			      vector<D3D11_INPUT_ELEMENT_DESC> &layout)
 {
@@ -143,6 +146,7 @@ static void BuildInputLayoutFromVars(shader_parser *parser, darray *vars,
 		;
 }
 
+// 构建输入布局
 void ShaderProcessor::BuildInputLayout(vector<D3D11_INPUT_ELEMENT_DESC> &layout)
 {
 	shader_func *func = shader_parser_getfunc(&parser, "main");
@@ -178,6 +182,7 @@ static inline void AddParam(shader_var &var, vector<gs_shader_param> &params,
 	params.push_back(gs_shader_param(var, texCounter));
 }
 
+// 构建参数
 void ShaderProcessor::BuildParams(vector<gs_shader_param> &params)
 {
 	uint32_t texCounter = 0;
@@ -194,12 +199,14 @@ static inline void AddSampler(gs_device_t *device, shader_sampler &sampler,
 	samplers.emplace_back(new ShaderSampler(sampler.name, device, &si));
 }
 
+// 构建采样器
 void ShaderProcessor::BuildSamplers(vector<unique_ptr<ShaderSampler>> &samplers)
 {
 	for (size_t i = 0; i < parser.samplers.num; i++)
 		AddSampler(device, parser.samplers.array[i], samplers);
 }
 
+// 构建处理结果日志
 void ShaderProcessor::BuildString(string &outputString)
 {
 	stringstream output;
@@ -233,6 +240,7 @@ void ShaderProcessor::BuildString(string &outputString)
 	outputString = move(output.str());
 }
 
+// 处理 shader
 void ShaderProcessor::Process(const char *shader_string, const char *file)
 {
 	bool success = shader_parse(&parser, shader_string, file);

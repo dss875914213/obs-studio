@@ -18,6 +18,7 @@
 #include <util/base.h>
 #include "d3d11-subsystem.hpp"
 
+// 获取有所 mipmap 的资源数据
 void gs_texture_2d::InitSRD(vector<D3D11_SUBRESOURCE_DATA> &srd)
 {
 	uint32_t rowSizeBytes = width * gs_get_format_bpp(format);
@@ -48,6 +49,7 @@ void gs_texture_2d::InitSRD(vector<D3D11_SUBRESOURCE_DATA> &srd)
 	}
 }
 
+// 更新缓存数据
 void gs_texture_2d::BackupTexture(const uint8_t *const *data)
 {
 	uint32_t textures = type == GS_TEXTURE_CUBE ? 6 : 1;
@@ -78,6 +80,7 @@ void gs_texture_2d::BackupTexture(const uint8_t *const *data)
 	}
 }
 
+// 得到共享句柄
 void gs_texture_2d::GetSharedHandle(IDXGIResource *dxgi_res)
 {
 	HANDLE handle;
@@ -94,6 +97,7 @@ void gs_texture_2d::GetSharedHandle(IDXGIResource *dxgi_res)
 	}
 }
 
+// 初始化纹理
 void gs_texture_2d::InitTexture(const uint8_t *const *data)
 {
 	HRESULT hr;
@@ -129,7 +133,7 @@ void gs_texture_2d::InitTexture(const uint8_t *const *data)
 		BackupTexture(data);
 		InitSRD(srd);
 	}
-
+	// 创建纹理
 	hr = device->device->CreateTexture2D(&td, data ? srd.data() : NULL,
 					     texture.Assign());
 	if (FAILED(hr))
@@ -175,6 +179,7 @@ void gs_texture_2d::InitTexture(const uint8_t *const *data)
 	}
 }
 
+// 初始化资源视图
 void gs_texture_2d::InitResourceView()
 {
 	HRESULT hr;
@@ -192,6 +197,7 @@ void gs_texture_2d::InitResourceView()
 								     : levels;
 	}
 
+	// 创建资源视图
 	hr = device->device->CreateShaderResourceView(texture, &viewDesc,
 						      shaderRes.Assign());
 	if (FAILED(hr))
@@ -203,6 +209,7 @@ void gs_texture_2d::InitResourceView()
 	if (dxgiFormatView == dxgiFormatViewLinear) {
 		shaderResLinear = shaderRes;
 	} else {
+		// 创建线性资源视图
 		hr = device->device->CreateShaderResourceView(
 			texture, &viewDescLinear, shaderResLinear.Assign());
 		if (FAILED(hr))
@@ -210,6 +217,7 @@ void gs_texture_2d::InitResourceView()
 	}
 }
 
+// 创建渲染目标视图
 void gs_texture_2d::InitRenderTargets()
 {
 	HRESULT hr;

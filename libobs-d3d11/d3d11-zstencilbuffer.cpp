@@ -39,12 +39,14 @@ void gs_zstencil_buffer::InitBuffer()
 	dsvd.Format = dxgiFormat;
 	dsvd.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
 
+	// 创建深度模板视图
 	hr = device->device->CreateDepthStencilView(texture, &dsvd,
 						    view.Assign());
 	if (FAILED(hr))
 		throw HRError("Failed to create depth stencil view", hr);
 }
 
+// 深度模板视图
 gs_zstencil_buffer::gs_zstencil_buffer(gs_device_t *device, uint32_t width,
 				       uint32_t height,
 				       gs_zstencil_format format)

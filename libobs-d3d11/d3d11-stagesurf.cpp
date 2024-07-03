@@ -17,6 +17,7 @@
 
 #include "d3d11-subsystem.hpp"
 
+// 创建纹理，支持所有格式
 gs_stage_surface::gs_stage_surface(gs_device_t *device, uint32_t width,
 				   uint32_t height, gs_color_format colorFormat)
 	: gs_obj(device, gs_type::gs_stage_surface),
@@ -42,6 +43,7 @@ gs_stage_surface::gs_stage_surface(gs_device_t *device, uint32_t width,
 		throw HRError("Failed to create staging surface", hr);
 }
 
+// 创建纹理，只支持 DXGI_FORMAT_P010 : DXGI_FORMAT_NV12
 gs_stage_surface::gs_stage_surface(gs_device_t *device, uint32_t width,
 				   uint32_t height, bool p010)
 	: gs_obj(device, gs_type::gs_stage_surface),

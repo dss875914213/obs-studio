@@ -376,14 +376,14 @@ struct gs_obj {
 
 // 顶点 buffer
 struct gs_vertex_buffer : gs_obj {
-	ComPtr<ID3D11Buffer> vertexBuffer;
-	ComPtr<ID3D11Buffer> normalBuffer;
-	ComPtr<ID3D11Buffer> colorBuffer;
-	ComPtr<ID3D11Buffer> tangentBuffer;
-	vector<ComPtr<ID3D11Buffer>> uvBuffers;
+	ComPtr<ID3D11Buffer> vertexBuffer; // 顶点 buffer
+	ComPtr<ID3D11Buffer> normalBuffer; // 法向量 buffer
+	ComPtr<ID3D11Buffer> colorBuffer; // 颜色 buffer
+	ComPtr<ID3D11Buffer> tangentBuffer; // 切线 buffer
+	vector<ComPtr<ID3D11Buffer>> uvBuffers; // uv buffer
 
-	bool dynamic;
-	VBDataPtr vbd;
+	bool dynamic; // D3D11_USAGE_DYNAMIC : D3D11_USAGE_DEFAULT
+	VBDataPtr vbd; // 顶点缓存数据
 	size_t numVerts;
 	vector<size_t> uvSizes;
 
@@ -470,11 +470,11 @@ struct gs_timer_range : gs_obj {
 // 纹理
 struct gs_texture : gs_obj {
 	gs_texture_type type;
-	uint32_t levels;
+	uint32_t levels; // mipmap 的数量
 	gs_color_format format;
 
-	ComPtr<ID3D11ShaderResourceView> shaderRes;
-	ComPtr<ID3D11ShaderResourceView> shaderResLinear;
+	ComPtr<ID3D11ShaderResourceView> shaderRes; // 资源视图
+	ComPtr<ID3D11ShaderResourceView> shaderResLinear; // 线性资源视图
 	D3D11_SHADER_RESOURCE_VIEW_DESC viewDesc{};
 	D3D11_SHADER_RESOURCE_VIEW_DESC viewDescLinear{};
 
@@ -505,27 +505,27 @@ struct gs_texture : gs_obj {
 
 // 2d 纹理
 struct gs_texture_2d : gs_texture {
-	ComPtr<ID3D11Texture2D> texture;
-	ComPtr<ID3D11RenderTargetView> renderTarget[6];
-	ComPtr<ID3D11RenderTargetView> renderTargetLinear[6];
-	ComPtr<IDXGISurface1> gdiSurface;
+	ComPtr<ID3D11Texture2D> texture; // 纹理
+	ComPtr<ID3D11RenderTargetView> renderTarget[6]; // 渲染目标视图
+	ComPtr<ID3D11RenderTargetView> renderTargetLinear[6]; // 线性渲染目标视图
+	ComPtr<IDXGISurface1> gdiSurface; //gdi 表面
 
-	uint32_t width = 0, height = 0;
-	uint32_t flags = 0;
+	uint32_t width = 0, height = 0; // 宽高
+	uint32_t flags = 0; // 构建纹理标识
 	DXGI_FORMAT dxgiFormatResource = DXGI_FORMAT_UNKNOWN;
 	DXGI_FORMAT dxgiFormatView = DXGI_FORMAT_UNKNOWN;
 	DXGI_FORMAT dxgiFormatViewLinear = DXGI_FORMAT_UNKNOWN;
-	bool isRenderTarget = false;
-	bool isGDICompatible = false;
-	bool isDynamic = false;
-	bool isShared = false;
-	bool genMipmaps = false;
-	uint32_t sharedHandle = GS_INVALID_HANDLE;
+	bool isRenderTarget = false; // 是否有渲染目标视图
+	bool isGDICompatible = false; // 是否要兼容 GDI
+	bool isDynamic = false; // 是否动态更新数据
+	bool isShared = false; // 是否共享纹理
+	bool genMipmaps = false; // 是否生成 mipmap
+	uint32_t sharedHandle = GS_INVALID_HANDLE; // 共享纹理句柄
 
-	gs_texture_2d *pairedTexture = nullptr;
-	bool twoPlane = false;
+	gs_texture_2d *pairedTexture = nullptr; // 相关联的纹理，y 和 uv 纹理
+	bool twoPlane = false; // 是否两个 plane p010 nv12
 	bool chroma = false;
-	bool acquired = false;
+	bool acquired = false; // 获取锁
 
 	vector<vector<uint8_t>> data;
 	vector<D3D11_SUBRESOURCE_DATA> srd;
@@ -557,6 +557,7 @@ struct gs_texture_2d : gs_texture {
 
 	inline gs_texture_2d() : gs_texture(GS_TEXTURE_2D, 0, GS_UNKNOWN) {}
 
+	// 构造函数
 	gs_texture_2d(gs_device_t *device, uint32_t width, uint32_t height,
 		      gs_color_format colorFormat, uint32_t levels,
 		      const uint8_t *const *data, uint32_t flags,
@@ -647,6 +648,7 @@ struct gs_zstencil_buffer : gs_obj {
 			   gs_zstencil_format format);
 };
 
+// 构建纹理
 struct gs_stage_surface : gs_obj {
 	ComPtr<ID3D11Texture2D> texture;
 	D3D11_TEXTURE2D_DESC td = {};
