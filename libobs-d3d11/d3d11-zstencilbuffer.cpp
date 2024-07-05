@@ -17,6 +17,7 @@
 
 #include "d3d11-subsystem.hpp"
 
+// 初始化深度纹理缓存
 void gs_zstencil_buffer::InitBuffer()
 {
 	HRESULT hr;

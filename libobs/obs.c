@@ -453,6 +453,7 @@ gs_effect_t *obs_load_effect(gs_effect_t **effect, const char *file)
 	return *effect;
 }
 
+// 初始化绘图类
 static int obs_init_graphics(struct obs_video_info *ovi)
 {
 	struct obs_core_video *video = &obs->video;
@@ -1405,6 +1406,7 @@ int obs_reset_video(struct obs_video_info *ovi)
 	ovi->output_height &= 0xFFFFFFFE;
 
 	if (!obs->video.graphics) {
+		// 初始化绘图类
 		int errorcode = obs_init_graphics(ovi);
 		if (errorcode != OBS_VIDEO_SUCCESS) {
 			obs_free_graphics();

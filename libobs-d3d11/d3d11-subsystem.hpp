@@ -362,11 +362,12 @@ enum class gs_type {
 	gs_texture_3d,
 };
 
+// gs 基类
 struct gs_obj {
-	gs_device_t *device;
-	gs_type obj_type;
-	gs_obj *next;
-	gs_obj **prev_next;
+	gs_device_t *device; // 设备
+	gs_type obj_type; // 资源类型
+	gs_obj *next; // 下一个对象
+	gs_obj **prev_next; // 上一个对象
 
 	inline gs_obj() : device(nullptr), next(nullptr), prev_next(nullptr) {}
 
@@ -843,7 +844,7 @@ struct gs_swap_chain : gs_obj {
 	gs_texture_2d target;
 	gs_zstencil_buffer zs;
 	ComPtr<IDXGISwapChain> swap;
-	HANDLE hWaitable = NULL;
+	HANDLE hWaitable = NULL; // 渲染完成通知事件
 
 	void InitTarget(uint32_t cx, uint32_t cy);
 	void InitZStencilBuffer(uint32_t cx, uint32_t cy);
@@ -1012,13 +1013,13 @@ struct gs_monitor_color_info {
 
 // 设备
 struct gs_device {
-	ComPtr<IDXGIFactory1> factory;
-	ComPtr<IDXGIAdapter1> adapter;
-	ComPtr<ID3D11Device> device;
-	ComPtr<ID3D11DeviceContext> context;
+	ComPtr<IDXGIFactory1> factory; // 工厂类
+	ComPtr<IDXGIAdapter1> adapter; // 适配器
+	ComPtr<ID3D11Device> device; // 设备
+	ComPtr<ID3D11DeviceContext> context; // 上下文
 	uint32_t adpIdx = 0;
-	bool nv12Supported = false;
-	bool p010Supported = false;
+	bool nv12Supported = false; // 是否支持 nv12 纹理
+	bool p010Supported = false; // 是否支持 p010 纹理
 
 	gs_texture_2d *curRenderTarget = nullptr;
 	gs_zstencil_buffer *curZStencilBuffer = nullptr;
@@ -1043,15 +1044,15 @@ struct gs_device {
 	ZStencilState zstencilState;
 	RasterState rasterState;
 	BlendState blendState;
-	vector<SavedZStencilState> zstencilStates;
-	vector<SavedRasterState> rasterStates;
-	vector<SavedBlendState> blendStates;
+	vector<SavedZStencilState> zstencilStates; // 支持的深度模板
+	vector<SavedRasterState> rasterStates; // 支持的光栅化
+	vector<SavedBlendState> blendStates; // 支持的混合模式
 	ID3D11DepthStencilState *curDepthStencilState = nullptr;
 	ID3D11RasterizerState *curRasterState = nullptr;
 	ID3D11BlendState *curBlendState = nullptr;
 	D3D11_PRIMITIVE_TOPOLOGY curToplogy;
 
-	pD3DCompile d3dCompile = nullptr;
+	pD3DCompile d3dCompile = nullptr; // 加载编译函数
 #ifdef DISASSEMBLE_SHADERS
 	pD3DDisassemble d3dDisassemble = nullptr;
 #endif

@@ -38,6 +38,7 @@ struct UnsupportedHWError : HRError {
 #pragma warning(disable : 4316)
 #endif
 
+// 报错细节打印
 static inline void LogD3D11ErrorDetails(HRError error, gs_device_t *device)
 {
 	if (error.hr == DXGI_ERROR_DEVICE_REMOVED) {
@@ -48,6 +49,7 @@ static inline void LogD3D11ErrorDetails(HRError error, gs_device_t *device)
 	}
 }
 
+// 基类
 gs_obj::gs_obj(gs_device_t *device_, gs_type type)
 	: device(device_), obj_type(type)
 {
@@ -66,6 +68,7 @@ gs_obj::~gs_obj()
 		next->prev_next = prev_next;
 }
 
+// 得到显示器的颜色空间，是否为 hdr
 static gs_monitor_color_info get_monitor_color_info(gs_device_t *device,
 						    HMONITOR hMonitor)
 {
@@ -113,6 +116,7 @@ static gs_monitor_color_info get_monitor_color_info(gs_device_t *device,
 	return gs_monitor_color_info(false, 8);
 }
 
+// 下一个颜色空间
 static enum gs_color_space get_next_space(gs_device_t *device, HWND hwnd,
 					  DXGI_SWAP_EFFECT effect)
 {
@@ -133,6 +137,7 @@ static enum gs_color_space get_next_space(gs_device_t *device, HWND hwnd,
 	return next_space;
 }
 
+// 格式转换
 static enum gs_color_format
 get_swap_format_from_space(gs_color_space space, gs_color_format sdr_format)
 {
@@ -170,6 +175,7 @@ make_swap_desc(gs_device *device, DXGI_SWAP_CHAIN_DESC &desc,
 	return space;
 }
 
+// 交换链相关
 void gs_swap_chain::InitTarget(uint32_t cx, uint32_t cy)
 {
 	HRESULT hr;
@@ -177,6 +183,7 @@ void gs_swap_chain::InitTarget(uint32_t cx, uint32_t cy)
 	target.width = cx;
 	target.height = cy;
 
+	// 获取交换链纹理
 	hr = swap->GetBuffer(0, __uuidof(ID3D11Texture2D),
 			     (void **)target.texture.Assign());
 	if (FAILED(hr))
@@ -186,6 +193,7 @@ void gs_swap_chain::InitTarget(uint32_t cx, uint32_t cy)
 	rtv.Format = target.dxgiFormatView;
 	rtv.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
 	rtv.Texture2D.MipSlice = 0;
+	// 创建渲染目标视图
 	hr = device->device->CreateRenderTargetView(
 		target.texture, &rtv, target.renderTarget[0].Assign());
 	if (FAILED(hr))
@@ -202,6 +210,7 @@ void gs_swap_chain::InitTarget(uint32_t cx, uint32_t cy)
 	}
 }
 
+// 初始化深度纹理缓存
 void gs_swap_chain::InitZStencilBuffer(uint32_t cx, uint32_t cy)
 {
 	zs.width = cx;
@@ -238,6 +247,7 @@ void gs_swap_chain::Resize(uint32_t cx, uint32_t cy, gs_color_format format)
 	}
 
 	const DXGI_FORMAT dxgi_format = ConvertGSTextureFormatView(format);
+	// 交换链重置缓存
 	hr = swap->ResizeBuffers(swapDesc.BufferCount, cx, cy, dxgi_format,
 				 swapDesc.Flags);
 	if (FAILED(hr))
@@ -248,6 +258,7 @@ void gs_swap_chain::Resize(uint32_t cx, uint32_t cy, gs_color_format format)
 			(format == GS_RGBA16F)
 				? DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709
 				: DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709;
+		// 设置颜色空间
 		hr = swap3->SetColorSpace1(dxgi_space);
 		if (FAILED(hr))
 			throw HRError("Failed to set color space", hr);
@@ -256,10 +267,12 @@ void gs_swap_chain::Resize(uint32_t cx, uint32_t cy, gs_color_format format)
 	target.dxgiFormatResource = ConvertGSTextureFormatResource(format);
 	target.dxgiFormatView = dxgi_format;
 	target.dxgiFormatViewLinear = ConvertGSTextureFormatViewLinear(format);
+	// 重新初始化纹理视图和深度模板视图
 	InitTarget(cx, cy);
 	InitZStencilBuffer(cx, cy);
 }
 
+// 初始化交换链
 void gs_swap_chain::Init()
 {
 	const gs_color_format format = get_swap_format_from_space(
@@ -297,6 +310,7 @@ gs_swap_chain::gs_swap_chain(gs_device *device, const gs_init_data *data)
 		flags |= DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
 	}
 
+	// 构建 swapDesc
 	space = make_swap_desc(device, swapDesc, &initData, effect, flags);
 	HRESULT hr = device->factory->CreateSwapChain(device->device, &swapDesc,
 						      swap.Assign());
@@ -324,6 +338,8 @@ gs_swap_chain::~gs_swap_chain()
 		CloseHandle(hWaitable);
 }
 
+// 设备相关
+// 加载编译函数
 void gs_device::InitCompiler()
 {
 	char d3dcompiler[40] = {};
@@ -357,6 +373,7 @@ void gs_device::InitCompiler()
 	      "DirectX components</a> that OBS Studio requires.";
 }
 
+// 加载工厂类
 void gs_device::InitFactory()
 {
 	HRESULT hr = CreateDXGIFactory1(IID_PPV_ARGS(&factory));
@@ -364,6 +381,7 @@ void gs_device::InitFactory()
 		throw UnsupportedHWError("Failed to create DXGIFactory", hr);
 }
 
+// 初始化适配器
 void gs_device::InitAdapter(uint32_t adapterIdx)
 {
 	HRESULT hr = factory->EnumAdapters1(adapterIdx, &adapter);
@@ -413,6 +431,7 @@ VertInOut main(VertInOut vert_in) \
 #define NV12_CX 128
 #define NV12_CY 128
 
+// 检测是否支持 nv12
 bool gs_device::HasBadNV12Output()
 try {
 	vec3 points[4];
@@ -476,6 +495,7 @@ try {
 	uint32_t linesize;
 	bool bad_driver = false;
 
+	// 检测是否绘制到 nv12 纹理上
 	if (gs_stagesurface_map(&nv12_stage, &data, &linesize)) {
 		bad_driver = data[linesize * NV12_CY] == 0;
 		gs_stagesurface_unmap(&nv12_stage);
@@ -498,6 +518,7 @@ try {
 	return false;
 }
 
+// 设置渲染队列最大缓存帧数 0-16
 static bool increase_maximum_frame_latency(ID3D11Device *device)
 {
 	ComQIPtr<IDXGIDevice1> dxgiDevice(device);
@@ -570,6 +591,7 @@ static bool set_priority(ID3D11Device *device)
 
 #endif
 
+// 检测格式
 static bool CheckFormat(ID3D11Device *device, DXGI_FORMAT format)
 {
 	constexpr UINT required = D3D11_FORMAT_SUPPORT_TEXTURE2D |
@@ -580,6 +602,7 @@ static bool CheckFormat(ID3D11Device *device, DXGI_FORMAT format)
 	       ((support & required) == required);
 }
 
+// 初始化设备
 void gs_device::InitDevice(uint32_t adapterIdx)
 {
 	wstring adapterName;
@@ -602,6 +625,7 @@ void gs_device::InitDevice(uint32_t adapterIdx)
 	blog(LOG_INFO, "Loading up D3D11 on adapter %s (%" PRIu32 ")",
 	     adapterNameUTF8.Get(), adapterIdx);
 
+	// 创建设备和上下文
 	hr = D3D11CreateDevice(adapter, D3D_DRIVER_TYPE_UNKNOWN, NULL,
 			       createFlags, featureLevels,
 			       sizeof(featureLevels) /
@@ -614,6 +638,7 @@ void gs_device::InitDevice(uint32_t adapterIdx)
 	blog(LOG_INFO, "D3D11 loaded successfully, feature level used: %x",
 	     (unsigned int)levelUsed);
 
+	// 防止 Present 调用中有时出现的停顿
 	/* prevent stalls sometimes seen in Present calls */
 	if (!increase_maximum_frame_latency(device)) {
 		blog(LOG_INFO, "DXGI increase maximum frame latency failed");
@@ -633,6 +658,7 @@ void gs_device::InitDevice(uint32_t adapterIdx)
 	nv12Supported = false;
 	p010Supported = false;
 
+	// 怀疑 WARP NV12 支持在旧版 Windows 上存在缺陷
 	/* WARP NV12 support is suspected to be buggy on older Windows */
 	if (desc.VendorId == 0x1414 && desc.DeviceId == 0x8c) {
 		return;
@@ -656,6 +682,7 @@ void gs_device::InitDevice(uint32_t adapterIdx)
 	p010Supported = nv12Supported && CheckFormat(device, DXGI_FORMAT_P010);
 }
 
+// 格式转换
 static inline void ConvertStencilSide(D3D11_DEPTH_STENCILOP_DESC &desc,
 				      const StencilSide &side)
 {
@@ -665,6 +692,7 @@ static inline void ConvertStencilSide(D3D11_DEPTH_STENCILOP_DESC &desc,
 	desc.StencilPassOp = ConvertGSStencilOp(side.zpass);
 }
 
+// 创建深度模板状态
 ID3D11DepthStencilState *gs_device::AddZStencilState()
 {
 	HRESULT hr;
@@ -695,6 +723,7 @@ ID3D11DepthStencilState *gs_device::AddZStencilState()
 	return state;
 }
 
+// 增加光栅化状态
 ID3D11RasterizerState *gs_device::AddRasterState()
 {
 	HRESULT hr;
@@ -720,6 +749,7 @@ ID3D11RasterizerState *gs_device::AddRasterState()
 	return state;
 }
 
+// 增加混合状态
 ID3D11BlendState *gs_device::AddBlendState()
 {
 	HRESULT hr;
@@ -765,6 +795,7 @@ ID3D11BlendState *gs_device::AddBlendState()
 	return state;
 }
 
+// 设置深度纹理模式
 void gs_device::UpdateZStencilState()
 {
 	ID3D11DepthStencilState *state = NULL;
@@ -791,6 +822,7 @@ void gs_device::UpdateZStencilState()
 	zstencilStateChanged = false;
 }
 
+// 设置光栅化模式
 void gs_device::UpdateRasterState()
 {
 	ID3D11RasterizerState *state = NULL;
@@ -817,6 +849,7 @@ void gs_device::UpdateRasterState()
 	rasterStateChanged = false;
 }
 
+// 设置混合度模式
 void gs_device::UpdateBlendState()
 {
 	ID3D11BlendState *state = NULL;
@@ -844,6 +877,7 @@ void gs_device::UpdateBlendState()
 	blendStateChanged = false;
 }
 
+// 更新变换矩阵
 void gs_device::UpdateViewProjMatrix()
 {
 	gs_matrix_get(&curViewMatrix);
@@ -862,6 +896,7 @@ void gs_device::UpdateViewProjMatrix()
 				      &curViewProjMatrix);
 }
 
+// 设置渲染目标视图
 void gs_device::FlushOutputViews()
 {
 	if (curFramebufferInvalidate) {
@@ -912,6 +947,7 @@ gs_device::~gs_device()
 	context->ClearState();
 }
 
+// 对外接口
 const char *device_get_name(void)
 {
 	return "Direct3D 11";
@@ -2202,6 +2238,7 @@ void device_begin_scene(gs_device_t *device)
 	clear_textures(device);
 }
 
+// 绘制
 void device_draw(gs_device_t *device, enum gs_draw_mode draw_mode,
 		 uint32_t start_vert, uint32_t num_verts)
 {
@@ -2266,6 +2303,7 @@ void device_end_scene(gs_device_t *device)
 	UNUSED_PARAMETER(device);
 }
 
+// 上屏相关
 void device_load_swapchain(gs_device_t *device, gs_swapchain_t *swapchain)
 {
 	gs_texture_t *target = device->curRenderTarget;
@@ -2376,6 +2414,7 @@ enum gs_cull_mode device_get_cull_mode(const gs_device_t *device)
 	return device->rasterState.cullMode;
 }
 
+// 混合相关
 void device_enable_blending(gs_device_t *device, bool enable)
 {
 	if (enable == device->blendState.blendEnabled)
@@ -2472,6 +2511,7 @@ void device_blend_op(gs_device_t *device, enum gs_blend_op_type op)
 	device->blendStateChanged = true;
 }
 
+// 深度视图
 void device_depth_function(gs_device_t *device, enum gs_depth_test test)
 {
 	if (device->zstencilState.depthFunc == test)
@@ -2535,6 +2575,7 @@ void device_stencil_op(gs_device_t *device, enum gs_stencil_side side,
 				      fail, zfail, zpass);
 }
 
+// 视口相关
 void device_set_viewport(gs_device_t *device, int x, int y, int width,
 			 int height)
 {
@@ -2601,6 +2642,7 @@ void device_ortho(gs_device_t *device, float left, float right, float top,
 	dst->t.w = 1.0f;
 }
 
+// 截锥体
 void device_frustum(gs_device_t *device, float left, float right, float top,
 		    float bottom, float zNear, float zFar)
 {
@@ -2653,6 +2695,7 @@ void gs_swapchain_destroy(gs_swapchain_t *swapchain)
 	delete swapchain;
 }
 
+// 纹理
 void gs_texture_destroy(gs_texture_t *tex)
 {
 	delete tex;
@@ -2720,6 +2763,7 @@ void *gs_texture_get_obj(gs_texture_t *tex)
 	return tex2d->texture.Get();
 }
 
+// 立方纹理
 void gs_cubetexture_destroy(gs_texture_t *cubetex)
 {
 	delete cubetex;
@@ -2744,6 +2788,7 @@ gs_cubetexture_get_color_format(const gs_texture_t *cubetex)
 	return tex->format;
 }
 
+// 体纹理
 void gs_voltexture_destroy(gs_texture_t *voltex)
 {
 	delete voltex;
@@ -2835,6 +2880,7 @@ void gs_samplerstate_destroy(gs_samplerstate_t *samplerstate)
 	delete samplerstate;
 }
 
+// 顶点缓存
 void gs_vertexbuffer_destroy(gs_vertbuffer_t *vertbuffer)
 {
 	if (vertbuffer && vertbuffer->device->lastVertexBuffer == vertbuffer)
@@ -2894,6 +2940,7 @@ struct gs_vb_data *gs_vertexbuffer_get_data(const gs_vertbuffer_t *vertbuffer)
 	return vertbuffer->vbd.data;
 }
 
+// 索引相关
 void gs_indexbuffer_destroy(gs_indexbuffer_t *indexbuffer)
 {
 	delete indexbuffer;
@@ -2944,6 +2991,7 @@ enum gs_index_type gs_indexbuffer_get_type(const gs_indexbuffer_t *indexbuffer)
 	return indexbuffer->type;
 }
 
+// 定时器
 void gs_timer_destroy(gs_timer_t *timer)
 {
 	delete timer;
@@ -3026,6 +3074,7 @@ gs_timer_range::gs_timer_range(gs_device_t *device)
 	Rebuild(device->device);
 }
 
+// 非必须实现对外接口
 extern "C" EXPORT bool device_gdi_texture_available(void)
 {
 	return true;
