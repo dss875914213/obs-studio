@@ -336,10 +336,12 @@ enum gs_shader_type {
 	GS_SHADER_VERTEX,
 	GS_SHADER_PIXEL,
 };
-
+// 着色器相关
+// 着色器销毁
 EXPORT void gs_shader_destroy(gs_shader_t *shader);
-
+// 获取着色器参数数量
 EXPORT int gs_shader_get_num_params(const gs_shader_t *shader);
+// 通过索引获取着色器参数
 EXPORT gs_sparam_t *gs_shader_get_param_by_idx(gs_shader_t *shader,
 					       uint32_t param);
 EXPORT gs_sparam_t *gs_shader_get_param_by_name(gs_shader_t *shader,
@@ -391,6 +393,7 @@ struct gs_effect_param_info {
 };
 #endif
 
+// effect 相关
 EXPORT void gs_effect_destroy(gs_effect_t *effect);
 
 EXPORT gs_technique_t *gs_effect_get_technique(const gs_effect_t *effect,
@@ -463,6 +466,7 @@ EXPORT void gs_effect_set_color(gs_eparam_t *param, uint32_t argb);
  * texture render helper functions
  * --------------------------------------------------- */
 
+// 纹理渲染
 EXPORT gs_texrender_t *gs_texrender_create(enum gs_color_format format,
 					   enum gs_zstencil_format zsformat);
 EXPORT void gs_texrender_destroy(gs_texrender_t *texrender);
@@ -609,6 +613,7 @@ gs_create_texture_file_data3(const char *file,
  * The flip value specifies whether the texture should be flipped on the U or V
  * axis with GS_FLIP_U and GS_FLIP_V.
  */
+// 绘制
 EXPORT void gs_draw_sprite(gs_texture_t *tex, uint32_t flip, uint32_t width,
 			   uint32_t height);
 
@@ -620,6 +625,7 @@ EXPORT void gs_draw_cube_backdrop(gs_texture_t *cubetex, const struct quat *rot,
 				  float left, float right, float top,
 				  float bottom, float znear);
 
+// 修改视口
 /** sets the viewport to current swap chain size */
 EXPORT void gs_reset_viewport(void);
 
@@ -637,8 +643,10 @@ EXPORT void gs_cubetexture_set_image(gs_texture_t *cubetex, uint32_t side,
 				     const void *data, uint32_t linesize,
 				     bool invert);
 
+// 透视
 EXPORT void gs_perspective(float fovy, float aspect, float znear, float zfar);
 
+// 混合
 EXPORT void gs_blend_state_push(void);
 EXPORT void gs_blend_state_pop(void);
 EXPORT void gs_reset_blend_state(void);
@@ -646,6 +654,7 @@ EXPORT void gs_reset_blend_state(void);
 /* -------------------------- */
 /* library-specific functions */
 
+// 创建交换链
 EXPORT gs_swapchain_t *gs_swapchain_create(const struct gs_init_data *data);
 
 EXPORT void gs_resize(uint32_t x, uint32_t y);
@@ -654,6 +663,7 @@ EXPORT void gs_get_size(uint32_t *x, uint32_t *y);
 EXPORT uint32_t gs_get_width(void);
 EXPORT uint32_t gs_get_height(void);
 
+// 资源创建
 EXPORT gs_texture_t *gs_texture_create(uint32_t width, uint32_t height,
 				       enum gs_color_format color_format,
 				       uint32_t levels, const uint8_t **data,
@@ -844,7 +854,7 @@ EXPORT size_t
 gs_indexbuffer_get_num_indices(const gs_indexbuffer_t *indexbuffer);
 EXPORT enum gs_index_type
 gs_indexbuffer_get_type(const gs_indexbuffer_t *indexbuffer);
-
+// 定时器
 EXPORT void gs_timer_destroy(gs_timer_t *timer);
 EXPORT void gs_timer_begin(gs_timer_t *timer);
 EXPORT void gs_timer_end(gs_timer_t *timer);
@@ -854,7 +864,7 @@ EXPORT void gs_timer_range_begin(gs_timer_range_t *range);
 EXPORT void gs_timer_range_end(gs_timer_range_t *range);
 EXPORT bool gs_timer_range_get_data(gs_timer_range_t *range, bool *disjoint,
 				    uint64_t *frequency);
-
+// 是否支持 nv12 和 p010
 EXPORT bool gs_nv12_available(void);
 EXPORT bool gs_p010_available(void);
 
@@ -900,6 +910,7 @@ EXPORT bool gs_shared_texture_available(void);
 EXPORT bool gs_gdi_texture_available(void);
 EXPORT bool gs_shared_texture_available(void);
 
+// 显示器相关
 struct gs_duplicator;
 typedef struct gs_duplicator gs_duplicator_t;
 
@@ -928,6 +939,7 @@ EXPORT gs_texture_t *gs_texture_create_gdi(uint32_t width, uint32_t height);
 EXPORT void *gs_texture_get_dc(gs_texture_t *gdi_tex);
 EXPORT void gs_texture_release_dc(gs_texture_t *gdi_tex);
 
+// 共享纹理
 /** creates a windows shared texture from a texture handle */
 EXPORT gs_texture_t *gs_texture_open_shared(uint32_t handle);
 EXPORT gs_texture_t *gs_texture_open_nt_shared(uint32_t handle);

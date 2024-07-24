@@ -289,7 +289,7 @@ private:
 
 	int previewX = 0, previewY = 0;
 	int previewCX = 0, previewCY = 0;
-	float previewScale = 0.0f;
+	float previewScale = 0.0f; // 预览缩放
 
 	ConfigFile basicConfig;
 

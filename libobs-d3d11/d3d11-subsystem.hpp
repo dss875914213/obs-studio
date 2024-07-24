@@ -1027,13 +1027,13 @@ struct gs_device {
 	enum gs_color_space curColorSpace = GS_CS_SRGB;
 	bool curFramebufferSrgb = false;
 	bool curFramebufferInvalidate = false;
-	gs_texture *curTextures[GS_MAX_TEXTURES];
+	gs_texture *curTextures[GS_MAX_TEXTURES]; // 当前纹理
 	gs_sampler_state *curSamplers[GS_MAX_TEXTURES];
-	gs_vertex_buffer *curVertexBuffer = nullptr;
+	gs_vertex_buffer *curVertexBuffer = nullptr; // 当前顶点缓存
 	gs_index_buffer *curIndexBuffer = nullptr;
 	gs_vertex_shader *curVertexShader = nullptr;
 	gs_pixel_shader *curPixelShader = nullptr;
-	gs_swap_chain *curSwapChain = nullptr;
+	gs_swap_chain *curSwapChain = nullptr; // 当前交换链
 
 	gs_vertex_buffer *lastVertexBuffer = nullptr;
 	gs_vertex_shader *lastVertexShader = nullptr; // 上一个着色器
@@ -1042,7 +1042,7 @@ struct gs_device {
 	bool rasterStateChanged = true;
 	bool blendStateChanged = true;
 	ZStencilState zstencilState;
-	RasterState rasterState;
+	RasterState rasterState; // 光栅状态
 	BlendState blendState;
 	vector<SavedZStencilState> zstencilStates; // 支持的深度模板
 	vector<SavedRasterState> rasterStates; // 支持的光栅化

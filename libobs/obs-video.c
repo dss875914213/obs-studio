@@ -29,6 +29,7 @@
 #include <windows.h>
 #endif
 
+// tick 视频素材
 static uint64_t tick_sources(uint64_t cur_time, uint64_t last_time)
 {
 	struct obs_core_data *data = &obs->data;
@@ -783,9 +784,11 @@ static inline void output_video_data(struct obs_core_video_mix *video,
 
 	info = video_output_get_info(video->video);
 
+	// 获取空闲 output_frame
 	locked = video_output_lock_frame(video->video, &output_frame, count,
 					 input_frame->timestamp);
 	if (locked) {
+		// 将数据拷贝到 output_frame 中
 		if (video->gpu_conversion) {
 			set_gpu_converted_data(&output_frame, input_frame,
 					       info);

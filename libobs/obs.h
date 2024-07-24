@@ -168,6 +168,7 @@ struct obs_transform_info {
 /**
  * Video initialization structure
  */
+// 视频初始化结构
 struct obs_video_info {
 #ifndef SWIG
 	/**
@@ -175,26 +176,30 @@ struct obs_video_info {
 	 */
 	const char *graphics_module;
 #endif
-
+	// 输出帧率
 	uint32_t fps_num; /**< Output FPS numerator */
 	uint32_t fps_den; /**< Output FPS denominator */
 
+	// 基本合成宽高
 	uint32_t base_width;  /**< Base compositing width */
 	uint32_t base_height; /**< Base compositing height */
 
+	// 输出宽高
 	uint32_t output_width;           /**< Output width */
 	uint32_t output_height;          /**< Output height */
 	enum video_format output_format; /**< Output format */
 
 	/** Video adapter index to use (NOTE: avoid for optimus laptops) */
+	// 适配器索引
 	uint32_t adapter;
 
 	/** Use shaders to convert to different color formats */
+	// 使用 gpu 进行颜色格式转换
 	bool gpu_conversion;
-
+	// 颜色空间和范围
 	enum video_colorspace colorspace; /**< YUV type (if YUV) */
 	enum video_range_type range;      /**< YUV range (if YUV) */
-
+	// 缩放类型
 	enum obs_scale_type scale_type; /**< How to scale if scaling */
 };
 

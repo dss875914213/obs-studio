@@ -1523,7 +1523,7 @@ bool obs_get_video_info(struct obs_video_info *ovi)
 	if (!obs->video.graphics || !obs->video.main_mix)
 		return false;
 
-	*ovi = obs->video.main_mix->ovi;
+	*ovi = obs->video.main_mix->ovi; // obs_video_info
 	return true;
 }
 

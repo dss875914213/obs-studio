@@ -205,18 +205,18 @@ extern void obs_view_free(struct obs_view *view);
 
 struct obs_display {
 	bool update_color_space;
-	bool enabled;
-	uint32_t cx, cy;
+	bool enabled; // 初始化成功
+	uint32_t cx, cy; // 预览窗口当前宽高
 	uint32_t next_cx, next_cy;
-	uint32_t background_color;
-	gs_swapchain_t *swap;
-	pthread_mutex_t draw_callbacks_mutex;
-	pthread_mutex_t draw_info_mutex;
-	DARRAY(struct draw_callback) draw_callbacks;
-	bool use_clear_workaround;
+	uint32_t background_color; // 背景颜色
+	gs_swapchain_t *swap; // 交换链
+	pthread_mutex_t draw_callbacks_mutex; // 绘制回调互斥锁
+	pthread_mutex_t draw_info_mutex; // 绘制信息互斥锁
+	DARRAY(struct draw_callback) draw_callbacks; // 绘制回调
+	bool use_clear_workaround; // 是否重置背景
 
-	struct obs_display *next;
-	struct obs_display **prev_next;
+	struct obs_display *next; // 下一个 display
+	struct obs_display **prev_next; // ? 上一个 display,为什么是 **
 };
 
 extern bool obs_display_init(struct obs_display *display,
@@ -374,20 +374,20 @@ struct obs_core_audio {
 struct obs_core_data {
 	struct obs_source *first_source;
 	struct obs_source *first_audio_source;
-	struct obs_display *first_display;
+	struct obs_display *first_display; // 第一个展示的 display
 	struct obs_output *first_output;
 	struct obs_encoder *first_encoder;
 	struct obs_service *first_service;
 
 	pthread_mutex_t sources_mutex;
-	pthread_mutex_t displays_mutex;
+	pthread_mutex_t displays_mutex; // 显示互斥量
 	pthread_mutex_t outputs_mutex;
 	pthread_mutex_t encoders_mutex;
 	pthread_mutex_t services_mutex;
 	pthread_mutex_t audio_sources_mutex;
 	pthread_mutex_t draw_callbacks_mutex;
 	DARRAY(struct draw_callback) draw_callbacks;
-	DARRAY(struct tick_callback) tick_callbacks;
+	DARRAY(struct tick_callback) tick_callbacks; // tick 回调？
 
 	struct obs_view main_view;
 

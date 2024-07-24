@@ -35,6 +35,7 @@
 #undef far
 #endif
 
+// 当前线程的 graphics
 static THREAD_LOCAL graphics_t *thread_graphics = NULL;
 
 static inline bool gs_obj_valid(const void *obj, const char *f,
@@ -1043,16 +1044,19 @@ void gs_draw_sprite(gs_texture_t *tex, uint32_t flip, uint32_t width,
 	fcx = width ? (float)width : (float)gs_texture_get_width(tex);
 	fcy = height ? (float)height : (float)gs_texture_get_height(tex);
 
+	// 设置顶点缓存数据
 	data = gs_vertexbuffer_get_data(graphics->sprite_buffer);
 	if (tex && gs_texture_is_rect(tex))
 		build_sprite_rect(data, tex, fcx, fcy, flip);
 	else
 		build_sprite_norm(data, fcx, fcy, flip);
-
+	// 更新顶点缓存，从一块内存，拷贝到另外一块内存
 	gs_vertexbuffer_flush(graphics->sprite_buffer);
+	// 将缓存设置到当前缓存中
 	gs_load_vertexbuffer(graphics->sprite_buffer);
+	// 设置索引缓存为空
 	gs_load_indexbuffer(NULL);
-
+	// 绘制三角带
 	gs_draw(GS_TRISTRIP, 0, 0);
 }
 

@@ -42,52 +42,52 @@ bool load_graphics_imports(struct gs_exports *exports, void *module,
 {
 	bool success = true;
 
-	GRAPHICS_IMPORT(device_get_name);
-	GRAPHICS_IMPORT(device_get_type);
-	GRAPHICS_IMPORT_OPTIONAL(device_enum_adapters);
-	GRAPHICS_IMPORT(device_preprocessor_name);
-	GRAPHICS_IMPORT(device_create);
-	GRAPHICS_IMPORT(device_destroy);
-	GRAPHICS_IMPORT(device_enter_context);
-	GRAPHICS_IMPORT(device_leave_context);
-	GRAPHICS_IMPORT(device_get_device_obj);
-	GRAPHICS_IMPORT(device_swapchain_create);
-	GRAPHICS_IMPORT(device_resize);
-	GRAPHICS_IMPORT(device_get_color_space);
-	GRAPHICS_IMPORT(device_update_color_space);
-	GRAPHICS_IMPORT(device_get_size);
-	GRAPHICS_IMPORT(device_get_width);
+	GRAPHICS_IMPORT(device_get_name); // 得到设备名字
+	GRAPHICS_IMPORT(device_get_type); // 得到设备类型
+	GRAPHICS_IMPORT_OPTIONAL(device_enum_adapters); // 枚举适配器
+	GRAPHICS_IMPORT(device_preprocessor_name); // 预处理器名字
+	GRAPHICS_IMPORT(device_create); // 创建设备
+	GRAPHICS_IMPORT(device_destroy); // 销毁设备
+	GRAPHICS_IMPORT(device_enter_context); // 没啥用，可能用到 cuda 编程才会用到
+	GRAPHICS_IMPORT(device_leave_context); // 同上
+	GRAPHICS_IMPORT(device_get_device_obj); // 获取设备
+	GRAPHICS_IMPORT(device_swapchain_create); // 创建交换链
+	GRAPHICS_IMPORT(device_resize); // 改变交换链纹理大小
+	GRAPHICS_IMPORT(device_get_color_space); // 获取交换链颜色空间
+	GRAPHICS_IMPORT(device_update_color_space); // 更新交换链颜色空间
+	GRAPHICS_IMPORT(device_get_size); // 获取交换链大小
+	GRAPHICS_IMPORT(device_get_width); // 获取交换链宽和高
 	GRAPHICS_IMPORT(device_get_height);
-	GRAPHICS_IMPORT(device_texture_create);
+	GRAPHICS_IMPORT(device_texture_create); // 穿件纹理
 	GRAPHICS_IMPORT(device_cubetexture_create);
 	GRAPHICS_IMPORT(device_voltexture_create);
-	GRAPHICS_IMPORT(device_zstencil_create);
+	GRAPHICS_IMPORT(device_zstencil_create); // 创建深度纹理视图
 	GRAPHICS_IMPORT(device_stagesurface_create);
-	GRAPHICS_IMPORT(device_samplerstate_create);
-	GRAPHICS_IMPORT(device_vertexshader_create);
+	GRAPHICS_IMPORT(device_samplerstate_create); // 创建采样器
+	GRAPHICS_IMPORT(device_vertexshader_create); // 创建着色器
 	GRAPHICS_IMPORT(device_pixelshader_create);
-	GRAPHICS_IMPORT(device_vertexbuffer_create);
-	GRAPHICS_IMPORT(device_indexbuffer_create);
-	GRAPHICS_IMPORT(device_timer_create);
-	GRAPHICS_IMPORT(device_timer_range_create);
-	GRAPHICS_IMPORT(device_get_texture_type);
-	GRAPHICS_IMPORT(device_load_vertexbuffer);
+	GRAPHICS_IMPORT(device_vertexbuffer_create); // 创建顶点缓存 
+	GRAPHICS_IMPORT(device_indexbuffer_create); // 创建索引缓存
+	GRAPHICS_IMPORT(device_timer_create); // 定时器创建
+	GRAPHICS_IMPORT(device_timer_range_create); 
+	GRAPHICS_IMPORT(device_get_texture_type); // 获取纹理类型
+	GRAPHICS_IMPORT(device_load_vertexbuffer); // 加载资源
 	GRAPHICS_IMPORT(device_load_indexbuffer);
 	GRAPHICS_IMPORT(device_load_texture);
 	GRAPHICS_IMPORT(device_load_samplerstate);
 	GRAPHICS_IMPORT(device_load_vertexshader);
 	GRAPHICS_IMPORT(device_load_pixelshader);
 	GRAPHICS_IMPORT(device_load_default_samplerstate);
-	GRAPHICS_IMPORT(device_get_vertex_shader);
+	GRAPHICS_IMPORT(device_get_vertex_shader); // 获取资源
 	GRAPHICS_IMPORT(device_get_pixel_shader);
 	GRAPHICS_IMPORT(device_get_render_target);
-	GRAPHICS_IMPORT(device_get_zstencil_target);
+	GRAPHICS_IMPORT(device_get_zstencil_target); // 设置资源
 	GRAPHICS_IMPORT(device_set_render_target);
 	GRAPHICS_IMPORT(device_set_render_target_with_color_space);
 	GRAPHICS_IMPORT(device_set_cube_render_target);
 	GRAPHICS_IMPORT(device_enable_framebuffer_srgb);
 	GRAPHICS_IMPORT(device_framebuffer_srgb_enabled);
-	GRAPHICS_IMPORT(device_copy_texture_region);
+	GRAPHICS_IMPORT(device_copy_texture_region); // 拷贝纹理
 	GRAPHICS_IMPORT(device_copy_texture);
 	GRAPHICS_IMPORT(device_stage_texture);
 	GRAPHICS_IMPORT(device_begin_frame);
@@ -101,18 +101,18 @@ bool load_graphics_imports(struct gs_exports *exports, void *module,
 	GRAPHICS_IMPORT(device_flush);
 	GRAPHICS_IMPORT(device_set_cull_mode);
 	GRAPHICS_IMPORT(device_get_cull_mode);
-	GRAPHICS_IMPORT(device_enable_blending);
+	GRAPHICS_IMPORT(device_enable_blending); // 开启模型功能
 	GRAPHICS_IMPORT(device_enable_depth_test);
 	GRAPHICS_IMPORT(device_enable_stencil_test);
 	GRAPHICS_IMPORT(device_enable_stencil_write);
 	GRAPHICS_IMPORT(device_enable_color);
-	GRAPHICS_IMPORT(device_blend_function);
+	GRAPHICS_IMPORT(device_blend_function); // 混合相关
 	GRAPHICS_IMPORT(device_blend_function_separate);
 	GRAPHICS_IMPORT(device_blend_op);
 	GRAPHICS_IMPORT(device_depth_function);
 	GRAPHICS_IMPORT(device_stencil_function);
 	GRAPHICS_IMPORT(device_stencil_op);
-	GRAPHICS_IMPORT(device_set_viewport);
+	GRAPHICS_IMPORT(device_set_viewport); // 设置是否
 	GRAPHICS_IMPORT(device_get_viewport);
 	GRAPHICS_IMPORT(device_set_scissor_rect);
 	GRAPHICS_IMPORT(device_ortho);
@@ -120,8 +120,9 @@ bool load_graphics_imports(struct gs_exports *exports, void *module,
 	GRAPHICS_IMPORT(device_projection_push);
 	GRAPHICS_IMPORT(device_projection_pop);
 
-	GRAPHICS_IMPORT(gs_swapchain_destroy);
+	GRAPHICS_IMPORT(gs_swapchain_destroy); // 交换链销毁
 
+	// 纹理相关
 	GRAPHICS_IMPORT(gs_texture_destroy);
 	GRAPHICS_IMPORT(gs_texture_get_width);
 	GRAPHICS_IMPORT(gs_texture_get_height);
@@ -131,16 +132,19 @@ bool load_graphics_imports(struct gs_exports *exports, void *module,
 	GRAPHICS_IMPORT_OPTIONAL(gs_texture_is_rect);
 	GRAPHICS_IMPORT(gs_texture_get_obj);
 
+	// 立方体纹理相关 
 	GRAPHICS_IMPORT(gs_cubetexture_destroy);
 	GRAPHICS_IMPORT(gs_cubetexture_get_size);
 	GRAPHICS_IMPORT(gs_cubetexture_get_color_format);
 
+	// 体纹理相关
 	GRAPHICS_IMPORT(gs_voltexture_destroy);
 	GRAPHICS_IMPORT(gs_voltexture_get_width);
 	GRAPHICS_IMPORT(gs_voltexture_get_height);
 	GRAPHICS_IMPORT(gs_voltexture_get_depth);
 	GRAPHICS_IMPORT(gs_voltexture_get_color_format);
 
+	// 
 	GRAPHICS_IMPORT(gs_stagesurface_destroy);
 	GRAPHICS_IMPORT(gs_stagesurface_get_width);
 	GRAPHICS_IMPORT(gs_stagesurface_get_height);
@@ -152,11 +156,13 @@ bool load_graphics_imports(struct gs_exports *exports, void *module,
 
 	GRAPHICS_IMPORT(gs_samplerstate_destroy);
 
+	// 顶点缓存向
 	GRAPHICS_IMPORT(gs_vertexbuffer_destroy);
 	GRAPHICS_IMPORT(gs_vertexbuffer_flush);
 	GRAPHICS_IMPORT(gs_vertexbuffer_flush_direct);
 	GRAPHICS_IMPORT(gs_vertexbuffer_get_data);
 
+	// 索引缓存相关
 	GRAPHICS_IMPORT(gs_indexbuffer_destroy);
 	GRAPHICS_IMPORT(gs_indexbuffer_flush);
 	GRAPHICS_IMPORT(gs_indexbuffer_flush_direct);
@@ -164,6 +170,7 @@ bool load_graphics_imports(struct gs_exports *exports, void *module,
 	GRAPHICS_IMPORT(gs_indexbuffer_get_num_indices);
 	GRAPHICS_IMPORT(gs_indexbuffer_get_type);
 
+	// 定时器相关
 	GRAPHICS_IMPORT(gs_timer_destroy);
 	GRAPHICS_IMPORT(gs_timer_begin);
 	GRAPHICS_IMPORT(gs_timer_end);
@@ -173,6 +180,7 @@ bool load_graphics_imports(struct gs_exports *exports, void *module,
 	GRAPHICS_IMPORT(gs_timer_range_end);
 	GRAPHICS_IMPORT(gs_timer_range_get_data);
 
+	// 着色器相关
 	GRAPHICS_IMPORT(gs_shader_destroy);
 	GRAPHICS_IMPORT(gs_shader_get_num_params);
 	GRAPHICS_IMPORT(gs_shader_get_param_by_idx);
@@ -193,6 +201,7 @@ bool load_graphics_imports(struct gs_exports *exports, void *module,
 	GRAPHICS_IMPORT(gs_shader_set_default);
 	GRAPHICS_IMPORT(gs_shader_set_next_sampler);
 
+	// 功能检测
 	GRAPHICS_IMPORT_OPTIONAL(device_nv12_available);
 	GRAPHICS_IMPORT_OPTIONAL(device_p010_available);
 
@@ -211,7 +220,7 @@ bool load_graphics_imports(struct gs_exports *exports, void *module,
 	/* win32 specific functions */
 #elif _WIN32
 	GRAPHICS_IMPORT(device_gdi_texture_available);
-	GRAPHICS_IMPORT(device_shared_texture_available);
+	GRAPHICS_IMPORT(device_shared_texture_available); // 是否支持共享纹理
 	GRAPHICS_IMPORT_OPTIONAL(device_get_duplicator_monitor_info);
 	GRAPHICS_IMPORT_OPTIONAL(device_duplicator_get_monitor_index);
 	GRAPHICS_IMPORT_OPTIONAL(device_duplicator_create);

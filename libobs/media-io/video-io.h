@@ -31,6 +31,7 @@ struct video_frame;
 struct video_output;
 typedef struct video_output video_t;
 
+// 视频格式
 enum video_format {
 	VIDEO_FORMAT_NONE,
 
@@ -106,12 +107,14 @@ enum video_range_type {
 	VIDEO_RANGE_FULL,
 };
 
+// 视频数据
 struct video_data {
 	uint8_t *data[MAX_AV_PLANES];
 	uint32_t linesize[MAX_AV_PLANES];
 	uint64_t timestamp;
 };
 
+// 视频输出信息
 struct video_output_info {
 	const char *name;
 
@@ -126,6 +129,7 @@ struct video_output_info {
 	enum video_range_type range;
 };
 
+// 判断格式是不是 yuv
 static inline bool format_is_yuv(enum video_format format)
 {
 	switch (format) {
@@ -254,6 +258,7 @@ enum video_scale_type {
 	VIDEO_SCALE_BICUBIC,
 };
 
+// 视频缩放信息
 struct video_scale_info {
 	enum video_format format;
 	uint32_t width;
@@ -277,9 +282,11 @@ EXPORT bool video_format_get_parameters_for_format(
 #define VIDEO_OUTPUT_INVALIDPARAM -1
 #define VIDEO_OUTPUT_FAIL -2
 
+// 视频输出开关
 EXPORT int video_output_open(video_t **video, struct video_output_info *info);
 EXPORT void video_output_close(video_t *video);
 
+// 连接断开视频输出
 EXPORT bool
 video_output_connect(video_t *video, const struct video_scale_info *conversion,
 		     void (*callback)(void *param, struct video_data *frame),
@@ -289,6 +296,7 @@ EXPORT void video_output_disconnect(video_t *video,
 						     struct video_data *frame),
 				    void *param);
 
+// 激活视频输出
 EXPORT bool video_output_active(const video_t *video);
 
 EXPORT const struct video_output_info *

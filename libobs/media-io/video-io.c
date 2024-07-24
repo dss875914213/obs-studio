@@ -34,19 +34,21 @@ extern profiler_name_store_t *obs_get_profiler_name_store(void);
 #define MAX_CONVERT_BUFFERS 3
 #define MAX_CACHE_SIZE 16
 
+// 缓存的帧信息
 struct cached_frame_info {
 	struct video_data frame;
 	int skipped;
-	int count;
+	int count; // 渲染次数
 };
 
+// 视频输入
 struct video_input {
 	struct video_scale_info conversion;
 	video_scaler_t *scaler;
-	struct video_frame frame[MAX_CONVERT_BUFFERS];
-	int cur_frame;
+	struct video_frame frame[MAX_CONVERT_BUFFERS]; // 帧数组
+	int cur_frame; // 当前帧索引
 
-	void (*callback)(void *param, struct video_data *frame);
+	void (*callback)(void *param, struct video_data *frame); // 回调数据，将输出通过回调发送出去
 	void *param;
 };
 
@@ -57,34 +59,36 @@ static inline void video_input_free(struct video_input *input)
 	video_scaler_destroy(input->scaler);
 }
 
+// 视频输出
 struct video_output {
-	struct video_output_info info;
+	struct video_output_info info; // 视频输出信息
 
-	pthread_t thread;
-	pthread_mutex_t data_mutex;
-	bool stop;
+	pthread_t thread; // 视频线程
+	pthread_mutex_t data_mutex; // 数据锁
+	bool stop; // 停止运行
 
-	os_sem_t *update_semaphore;
+	os_sem_t *update_semaphore; // 数据更新信号
 	uint64_t frame_time;
-	volatile long skipped_frames;
-	volatile long total_frames;
+	volatile long skipped_frames; // 跳过的帧数
+	volatile long total_frames; // 总帧数
 
-	bool initialized;
+	bool initialized; // 是否初始化
 
-	pthread_mutex_t input_mutex;
-	DARRAY(struct video_input) inputs;
+	pthread_mutex_t input_mutex; // 视频数据输出数组锁
+	DARRAY(struct video_input) inputs; // 视频数据输出数组
 
-	size_t available_frames;
-	size_t first_added;
+	size_t available_frames; // 空闲缓存数
+	size_t first_added; // 头尾索引
 	size_t last_added;
-	struct cached_frame_info cache[MAX_CACHE_SIZE];
+	struct cached_frame_info cache[MAX_CACHE_SIZE]; // 缓存帧输入信息
 
-	volatile bool raw_active;
-	volatile long gpu_refs;
+	volatile bool raw_active; // 
+	volatile long gpu_refs; // gpu 索引
 };
 
 /* ------------------------------------------------------------------------- */
 
+// 缩放视频输出
 static inline bool scale_video_output(struct video_input *input,
 				      struct video_data *data)
 {
@@ -116,6 +120,7 @@ static inline bool scale_video_output(struct video_input *input,
 	return success;
 }
 
+// 获取当前帧数据，并推出去
 static inline bool video_output_cur_frame(struct video_output *video)
 {
 	struct cached_frame_info *frame_info;
@@ -123,7 +128,7 @@ static inline bool video_output_cur_frame(struct video_output *video)
 	bool skipped;
 
 	/* -------------------------------- */
-
+	// 获取队列第一个数据
 	pthread_mutex_lock(&video->data_mutex);
 
 	frame_info = &video->cache[video->first_added];
@@ -138,8 +143,11 @@ static inline bool video_output_cur_frame(struct video_output *video)
 		struct video_input *input = video->inputs.array + i;
 		struct video_data frame = frame_info->frame;
 
-		if (scale_video_output(input, &frame))
+		// 将数据写入 video_output 缓存中
+		if (scale_video_output(input, &frame)) {
+			// 把数据通过回调发送出去
 			input->callback(input->param, &frame);
+		}
 	}
 
 	pthread_mutex_unlock(&video->input_mutex);
@@ -159,6 +167,7 @@ static inline bool video_output_cur_frame(struct video_output *video)
 		if (++video->available_frames == video->info.cache_size)
 			video->last_added = video->first_added;
 	} else if (skipped) {
+		// 统计跳过的帧数
 		--frame_info->skipped;
 		os_atomic_inc_long(&video->skipped_frames);
 	}
@@ -170,6 +179,7 @@ static inline bool video_output_cur_frame(struct video_output *video)
 	return complete;
 }
 
+// 视频线程
 static void *video_thread(void *param)
 {
 	struct video_output *video = param;
@@ -180,11 +190,13 @@ static void *video_thread(void *param)
 		profile_store_name(obs_get_profiler_name_store(),
 				   "video_thread(%s)", video->info.name);
 
+	// 获取信号
 	while (os_sem_wait(video->update_semaphore) == 0) {
 		if (video->stop)
 			break;
 
 		profile_start(video_thread_name);
+		// 把数据发送出去
 		while (!video->stop && !video_output_cur_frame(video)) {
 			os_atomic_inc_long(&video->total_frames);
 		}
@@ -199,13 +211,14 @@ static void *video_thread(void *param)
 }
 
 /* ------------------------------------------------------------------------- */
-
+// 有效的视频帧
 static inline bool valid_video_params(const struct video_output_info *info)
 {
 	return info->height != 0 && info->width != 0 && info->fps_den != 0 &&
 	       info->fps_num != 0;
 }
 
+// 初始化缓存
 static inline void init_cache(struct video_output *video)
 {
 	if (video->info.cache_size > MAX_CACHE_SIZE)
@@ -214,7 +227,7 @@ static inline void init_cache(struct video_output *video)
 	for (size_t i = 0; i < video->info.cache_size; i++) {
 		struct video_frame *frame;
 		frame = (struct video_frame *)&video->cache[i];
-
+		// 视频帧初始化
 		video_frame_init(frame, video->info.format, video->info.width,
 				 video->info.height);
 	}
@@ -222,6 +235,7 @@ static inline void init_cache(struct video_output *video)
 	video->available_frames = video->info.cache_size;
 }
 
+// 打开视频输出
 int video_output_open(video_t **video, struct video_output_info *info)
 {
 	struct video_output *out;
@@ -264,6 +278,7 @@ fail0:
 	return VIDEO_OUTPUT_FAIL;
 }
 
+// 关闭视频输出
 void video_output_close(video_t *video)
 {
 	if (!video)
@@ -281,6 +296,7 @@ void video_output_close(video_t *video)
 	bfree(video);
 }
 
+// 查询回调和参数的输入索引
 static size_t video_get_input_idx(const video_t *video,
 				  void (*callback)(void *param,
 						   struct video_data *frame),
@@ -295,11 +311,13 @@ static size_t video_get_input_idx(const video_t *video,
 	return DARRAY_INVALID;
 }
 
+// 颜色范围是否匹配
 static bool match_range(enum video_range_type a, enum video_range_type b)
 {
 	return (a == VIDEO_RANGE_FULL) == (b == VIDEO_RANGE_FULL);
 }
 
+// 颜色空间坍塌
 static enum video_colorspace collapse_space(enum video_colorspace cs)
 {
 	switch (cs) {
@@ -319,6 +337,7 @@ static bool match_space(enum video_colorspace a, enum video_colorspace b)
 	return collapse_space(a) == collapse_space(b);
 }
 
+// 视频输入初始化
 static inline bool video_input_init(struct video_input *input,
 				    struct video_output *video)
 {
@@ -359,12 +378,14 @@ static inline bool video_input_init(struct video_input *input,
 	return true;
 }
 
+// 帧重置
 static inline void reset_frames(video_t *video)
 {
 	os_atomic_set_long(&video->skipped_frames, 0);
 	os_atomic_set_long(&video->total_frames, 0);
 }
 
+// 设置输出，将数据通过回调函数传出去
 bool video_output_connect(
 	video_t *video, const struct video_scale_info *conversion,
 	void (*callback)(void *param, struct video_data *frame), void *param)
@@ -413,6 +434,7 @@ bool video_output_connect(
 	return success;
 }
 
+// 打印跳过的帧数
 static void log_skipped(video_t *video)
 {
 	long skipped = os_atomic_load_long(&video->skipped_frames);
@@ -430,6 +452,7 @@ static void log_skipped(video_t *video)
 		     percentage_skipped);
 }
 
+// 移除输出，回调函数
 void video_output_disconnect(video_t *video,
 			     void (*callback)(void *param,
 					      struct video_data *frame),
@@ -456,6 +479,7 @@ void video_output_disconnect(video_t *video,
 	pthread_mutex_unlock(&video->input_mutex);
 }
 
+// 输出是否在激活状态
 bool video_output_active(const video_t *video)
 {
 	if (!video)
@@ -463,11 +487,13 @@ bool video_output_active(const video_t *video)
 	return os_atomic_load_bool(&video->raw_active);
 }
 
+// 得到输出信息
 const struct video_output_info *video_output_get_info(const video_t *video)
 {
 	return video ? &video->info : NULL;
 }
 
+// 获取下一个空闲 cache， 并通过 frame 传出去。然后在外面把数据放到 cache 中
 bool video_output_lock_frame(video_t *video, struct video_frame *frame,
 			     int count, uint64_t timestamp)
 {
@@ -513,16 +539,19 @@ void video_output_unlock_frame(video_t *video)
 	pthread_mutex_lock(&video->data_mutex);
 
 	video->available_frames--;
+	// 发送数据更新信号
 	os_sem_post(video->update_semaphore);
 
 	pthread_mutex_unlock(&video->data_mutex);
 }
 
+// 获取帧时间
 uint64_t video_output_get_frame_time(const video_t *video)
 {
 	return video ? video->frame_time : 0;
 }
 
+// 输出停止
 void video_output_stop(video_t *video)
 {
 	void *thread_ret;
@@ -541,6 +570,7 @@ void video_output_stop(video_t *video)
 	}
 }
 
+// 检测输出是否停止
 bool video_output_stopped(video_t *video)
 {
 	if (!video)
@@ -549,11 +579,13 @@ bool video_output_stopped(video_t *video)
 	return video->stop;
 }
 
+// 输出得到格式
 enum video_format video_output_get_format(const video_t *video)
 {
 	return video ? video->info.format : VIDEO_FORMAT_NONE;
 }
 
+// 得到宽和高
 uint32_t video_output_get_width(const video_t *video)
 {
 	return video ? video->info.width : 0;
@@ -564,6 +596,7 @@ uint32_t video_output_get_height(const video_t *video)
 	return video ? video->info.height : 0;
 }
 
+// 得到帧率
 double video_output_get_frame_rate(const video_t *video)
 {
 	if (!video)
@@ -572,6 +605,7 @@ double video_output_get_frame_rate(const video_t *video)
 	return (double)video->info.fps_num / (double)video->info.fps_den;
 }
 
+// 得到帧数
 uint32_t video_output_get_skipped_frames(const video_t *video)
 {
 	return (uint32_t)os_atomic_load_long(&video->skipped_frames);
@@ -588,6 +622,7 @@ uint32_t video_output_get_total_frames(const video_t *video)
  * fine.  What's more important is having a relatively accurate skipped frame
  * count. */
 
+// 增加/减少 纹理编码器引用计数
 void video_output_inc_texture_encoders(video_t *video)
 {
 	if (os_atomic_inc_long(&video->gpu_refs) == 1 &&
@@ -604,6 +639,7 @@ void video_output_dec_texture_encoders(video_t *video)
 	}
 }
 
+// 增加帧数
 void video_output_inc_texture_frames(video_t *video)
 {
 	os_atomic_inc_long(&video->total_frames);

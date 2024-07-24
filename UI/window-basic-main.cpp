@@ -4198,6 +4198,7 @@ void OBSBasic::DrawBackdrop(float cx, float cy)
 	GS_DEBUG_MARKER_END();
 }
 
+// 渲染主窗口 dss begin
 void OBSBasic::RenderMain(void *data, uint32_t cx, uint32_t cy)
 {
 	GS_DEBUG_MARKER_BEGIN(GS_DEBUG_COLOR_DEFAULT, "RenderMain");
@@ -4231,6 +4232,7 @@ void OBSBasic::RenderMain(void *data, uint32_t cx, uint32_t cy)
 	gs_set_viewport(window->previewX, window->previewY, window->previewCX,
 			window->previewCY);
 
+	// 绘制源
 	if (window->IsPreviewProgramMode()) {
 		window->DrawBackdrop(float(ovi.base_width),
 				     float(ovi.base_height));
@@ -4255,6 +4257,7 @@ void OBSBasic::RenderMain(void *data, uint32_t cx, uint32_t cy)
 	uint32_t targetCX = window->previewCX;
 	uint32_t targetCY = window->previewCY;
 
+	// 绘制安全区域
 	if (window->drawSafeAreas) {
 		RenderSafeAreas(window->actionSafeMargin, targetCX, targetCY);
 		RenderSafeAreas(window->graphicsSafeMargin, targetCX, targetCY);
@@ -4265,6 +4268,7 @@ void OBSBasic::RenderMain(void *data, uint32_t cx, uint32_t cy)
 		RenderSafeAreas(window->rightLine, targetCX, targetCY);
 	}
 
+	// 绘制辅助信息
 	if (window->drawSpacingHelpers)
 		window->ui->preview->DrawSpacingHelpers();
 
@@ -4549,6 +4553,7 @@ void OBSBasic::ResetAudioDevice(const char *sourceId, const char *deviceId,
 	}
 }
 
+// 重置预览
 void OBSBasic::ResizePreview(uint32_t cx, uint32_t cy)
 {
 	QSize targetSize;

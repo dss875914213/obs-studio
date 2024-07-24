@@ -20,6 +20,7 @@
 #include "../util/bmem.h"
 #include "video-io.h"
 
+// 视频帧
 struct video_frame {
 	uint8_t *data[MAX_AV_PLANES];
 	uint32_t linesize[MAX_AV_PLANES];

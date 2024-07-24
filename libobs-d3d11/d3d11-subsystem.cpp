@@ -224,6 +224,7 @@ void gs_swap_chain::InitZStencilBuffer(uint32_t cx, uint32_t cy)
 	}
 }
 
+// 交换链改变大小
 void gs_swap_chain::Resize(uint32_t cx, uint32_t cy, gs_color_format format)
 {
 	RECT clientRect;
@@ -1432,6 +1433,7 @@ gs_swapchain_t *device_swapchain_create(gs_device_t *device,
 	return swap;
 }
 
+// 改变交换链大小，内部实现函数
 static void device_resize_internal(gs_device_t *device, uint32_t cx,
 				   uint32_t cy, gs_color_space space)
 {
@@ -1917,6 +1919,7 @@ void device_load_vertexshader(gs_device_t *device, gs_shader_t *vertshader)
 	device->context->VSSetConstantBuffers(0, 1, &constants);
 }
 
+// 重置纹理和颜色着色器资源
 static inline void clear_textures(gs_device_t *device)
 {
 	ID3D11ShaderResourceView *views[GS_MAX_TEXTURES];
@@ -2335,6 +2338,7 @@ void device_load_swapchain(gs_device_t *device, gs_swapchain_t *swapchain)
 void device_clear(gs_device_t *device, uint32_t clear_flags,
 		  const struct vec4 *color, float depth, uint8_t stencil)
 {
+	// 清理渲染目标视图
 	if (clear_flags & GS_CLEAR_COLOR) {
 		gs_texture_2d *const tex = device->curRenderTarget;
 		if (tex) {
@@ -2347,6 +2351,7 @@ void device_clear(gs_device_t *device, uint32_t clear_flags,
 		}
 	}
 
+	// 清理深度和模板视图
 	if (device->curZStencilBuffer) {
 		uint32_t flags = 0;
 		if ((clear_flags & GS_CLEAR_DEPTH) != 0)
