@@ -769,6 +769,7 @@ void OBSBasic::DeferSaveEnd()
 
 static void LogFilter(obs_source_t *, obs_source_t *filter, void *v_val);
 
+// 加载音频设备
 static void LoadAudioDevice(const char *name, int channel, obs_data_t *parent)
 {
 	OBSDataAutoRelease data = obs_data_get_obj(parent, name);

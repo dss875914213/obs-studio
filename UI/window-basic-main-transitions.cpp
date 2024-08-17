@@ -406,6 +406,7 @@ static inline void SetComboTransition(QComboBox *combo, obs_source_t *tr)
 	}
 }
 
+// 设置转场
 void OBSBasic::SetTransition(OBSSource transition)
 {
 	OBSSourceAutoRelease oldTransition = obs_get_output_source(0);

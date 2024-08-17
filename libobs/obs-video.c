@@ -136,7 +136,7 @@ static inline void render_main_texture(struct obs_core_video_mix *video)
 
 	struct vec4 clear_color;
 	vec4_set(&clear_color, 0.0f, 0.0f, 0.0f, 0.0f);
-
+	// 设置渲染目标
 	gs_set_render_target_with_color_space(video->render_texture, NULL,
 					      video->render_space);
 	gs_clear(GS_CLEAR_COLOR, &clear_color, 1.0f, 0);
@@ -153,7 +153,7 @@ static inline void render_main_texture(struct obs_core_video_mix *video)
 	}
 
 	pthread_mutex_unlock(&obs->data.draw_callbacks_mutex);
-
+	// view 渲染
 	obs_view_render(video->view);
 
 	video->texture_rendered = true;
@@ -522,6 +522,7 @@ end:
 }
 #endif
 
+// 渲染视频
 static inline void render_video(struct obs_core_video_mix *video,
 				bool raw_active, const bool gpu_active,
 				int cur_texture)
@@ -530,7 +531,7 @@ static inline void render_video(struct obs_core_video_mix *video,
 
 	gs_enable_depth_test(false);
 	gs_set_cull_mode(GS_NEITHER);
-
+	// 渲染主纹理
 	render_main_texture(video);
 
 	if (raw_active || gpu_active) {

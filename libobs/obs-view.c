@@ -34,6 +34,7 @@ bool obs_view_init(struct obs_view *view)
 	return true;
 }
 
+// view 创建
 obs_view_t *obs_view_create(void)
 {
 	struct obs_view *view = bzalloc(sizeof(struct obs_view));
@@ -46,6 +47,7 @@ obs_view_t *obs_view_create(void)
 	return view;
 }
 
+// 释放 view
 void obs_view_free(struct obs_view *view)
 {
 	if (!view)
@@ -63,6 +65,7 @@ void obs_view_free(struct obs_view *view)
 	pthread_mutex_destroy(&view->channels_mutex);
 }
 
+// 销毁 view 
 void obs_view_destroy(obs_view_t *view)
 {
 	if (view) {
@@ -71,6 +74,7 @@ void obs_view_destroy(obs_view_t *view)
 	}
 }
 
+// 得到 channel 通道的 source
 obs_source_t *obs_view_get_source(obs_view_t *view, uint32_t channel)
 {
 	obs_source_t *source;
@@ -88,6 +92,7 @@ obs_source_t *obs_view_get_source(obs_view_t *view, uint32_t channel)
 	return source;
 }
 
+// 设置新源，销毁旧源
 void obs_view_set_source(obs_view_t *view, uint32_t channel,
 			 obs_source_t *source)
 {
@@ -116,6 +121,7 @@ void obs_view_set_source(obs_view_t *view, uint32_t channel,
 	}
 }
 
+// view 渲染
 void obs_view_render(obs_view_t *view)
 {
 	if (!view)
@@ -133,6 +139,7 @@ void obs_view_render(obs_view_t *view)
 				obs_source_release(source);
 				view->channels[i] = NULL;
 			} else {
+				// 渲染源
 				obs_source_video_render(source);
 			}
 		}
@@ -141,6 +148,7 @@ void obs_view_render(obs_view_t *view)
 	pthread_mutex_unlock(&view->channels_mutex);
 }
 
+// 搜索 view 在 mixes 中的第几个
 static inline size_t find_mix_for_view(obs_view_t *view)
 {
 	for (size_t i = 0, num = obs->video.mixes.num; i < num; i++) {
@@ -151,6 +159,7 @@ static inline size_t find_mix_for_view(obs_view_t *view)
 	return DARRAY_INVALID;
 }
 
+// 设置主要的 mix
 static inline void set_main_mix()
 {
 	size_t idx = find_mix_for_view(&obs->data.main_view);
@@ -161,6 +170,7 @@ static inline void set_main_mix()
 	obs->video.main_mix = mix;
 }
 
+// 增加 view
 video_t *obs_view_add(obs_view_t *view)
 {
 	if (!obs->video.main_mix)
@@ -187,6 +197,7 @@ video_t *obs_view_add2(obs_view_t *view, struct obs_video_info *ovi)
 	return mix->video;
 }
 
+// 移除 view
 void obs_view_remove(obs_view_t *view)
 {
 	if (!view)

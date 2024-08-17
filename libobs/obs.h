@@ -654,6 +654,7 @@ EXPORT video_t *obs_get_video(void);
 EXPORT bool obs_video_active(void);
 
 /** Sets the primary output source for a channel. */
+// 为每个 channel 设置输出源
 EXPORT void obs_set_output_source(uint32_t channel, obs_source_t *source);
 
 /**

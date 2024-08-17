@@ -389,7 +389,7 @@ struct obs_core_data {
 	DARRAY(struct draw_callback) draw_callbacks;
 	DARRAY(struct tick_callback) tick_callbacks; // tick 回调？
 
-	struct obs_view main_view;
+	struct obs_view main_view; // 主要 view
 
 	long long unnamed_index;
 
@@ -668,7 +668,7 @@ struct obs_source {
 	/* used to indicate that the source has been removed and all
 	 * references to it should be released (not exactly how I would prefer
 	 * to handle things but it's the best option) */
-	bool removed;
+	bool removed; // 被移除的
 
 	/*  used to indicate if the source should show up when queried for user ui */
 	bool temp_removed;

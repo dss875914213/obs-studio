@@ -1742,6 +1742,7 @@ obs_source_t *obs_get_output_source(uint32_t channel)
 	return obs_view_get_source(&obs->data.main_view, channel);
 }
 
+// 设置输出源
 void obs_set_output_source(uint32_t channel, obs_source_t *source)
 {
 	assert(channel < MAX_CHANNELS);
