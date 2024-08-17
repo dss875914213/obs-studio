@@ -1044,19 +1044,20 @@ void gs_draw_sprite(gs_texture_t *tex, uint32_t flip, uint32_t width,
 	fcx = width ? (float)width : (float)gs_texture_get_width(tex);
 	fcy = height ? (float)height : (float)gs_texture_get_height(tex);
 
-	// 设置顶点缓存数据
+	// 获取顶点缓存地址
 	data = gs_vertexbuffer_get_data(graphics->sprite_buffer);
+	// 更新 buffer 数据
 	if (tex && gs_texture_is_rect(tex))
 		build_sprite_rect(data, tex, fcx, fcy, flip);
 	else
 		build_sprite_norm(data, fcx, fcy, flip);
-	// 更新顶点缓存，从一块内存，拷贝到另外一块内存
+	// 更新 buffer 数据到，dx11 当前 shader 中
 	gs_vertexbuffer_flush(graphics->sprite_buffer);
 	// 将缓存设置到当前缓存中
 	gs_load_vertexbuffer(graphics->sprite_buffer);
-	// 清除顶点缓存
+	// 清除顶点索引缓存
 	gs_load_indexbuffer(NULL);
-	// 绘制三角带
+	// 使用顶点坐标绘制三角带
 	gs_draw(GS_TRISTRIP, 0, 0);
 }
 

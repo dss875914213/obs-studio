@@ -1200,6 +1200,7 @@ bool obs_remove_data_path(const char *path)
 }
 
 static const char *obs_startup_name = "obs_startup";
+// obs 启动
 bool obs_startup(const char *locale, const char *module_config_path,
 		 profiler_name_store_t *store)
 {

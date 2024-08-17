@@ -462,7 +462,7 @@ struct obs_core {
 	struct obs_core_data data;
 	struct obs_core_hotkeys hotkeys;
 
-	os_task_queue_t *destruction_task_thread;
+	os_task_queue_t *destruction_task_thread; // 析构任务线程
 
 	obs_task_handler_t ui_task_handler;
 };

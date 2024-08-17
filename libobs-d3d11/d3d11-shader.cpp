@@ -215,10 +215,17 @@ void gs_shader::Compile(const char *shaderString, const char *file,
 		throw "No shader string specified";
 
 	// -DSS 把这边的 D3D10_SHADER_OPTIMIZATION_LEVEL1 改成 D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION 可以调试 shader 源码
-	hr = device->d3dCompile(shaderString, strlen(shaderString), file, NULL,
+	/*hr = device->d3dCompile(shaderString, strlen(shaderString), file, NULL,
 				NULL, "main", target,
 				D3D10_SHADER_OPTIMIZATION_LEVEL1, 0, shader,
+				errorsBlob.Assign());*/
+
+	hr = device->d3dCompile(shaderString, strlen(shaderString), file, NULL,
+				NULL, "main", target,
+				D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION,
+				0, shader,
 				errorsBlob.Assign());
+
 	if (FAILED(hr)) {
 		if (errorsBlob != NULL && errorsBlob->GetBufferSize())
 			throw ShaderError(errorsBlob, hr);

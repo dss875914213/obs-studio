@@ -2628,6 +2628,7 @@ void device_set_scissor_rect(gs_device_t *device, const struct gs_rect *rect)
 	device->rasterStateChanged = true;
 }
 
+// 正交投影矩阵，和其他的投影变换矩阵不太一样，这边做了 x和y 的偏移，移到了最左边和上面
 void device_ortho(gs_device_t *device, float left, float right, float top,
 		  float bottom, float zNear, float zFar)
 {
