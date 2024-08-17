@@ -4165,6 +4165,7 @@ void OBSBasic::SourceRenamed(void *data, calldata_t *params)
 	blog(LOG_INFO, "Source '%s' renamed to '%s'", prevName, newName);
 }
 
+// 绘制背景
 void OBSBasic::DrawBackdrop(float cx, float cy)
 {
 	if (!box)
@@ -4223,16 +4224,20 @@ void OBSBasic::RenderMain(void *data, uint32_t cx, uint32_t cy)
 	gs_ortho(-window->previewX, right, -window->previewY, bottom, -100.0f,
 		 100.0f);
 
+	// 绘制溢出区域为斜杠图像
 	window->ui->preview->DrawOverflow();
 
 	/* --------------------------------------- */
 
+	// 设置投影参数
 	gs_ortho(0.0f, float(ovi.base_width), 0.0f, float(ovi.base_height),
 		 -100.0f, 100.0f);
+	// 设置视口
 	gs_set_viewport(window->previewX, window->previewY, window->previewCX,
 			window->previewCY);
 
 	// 绘制源
+	// 导播台模式，需要重新绘制
 	if (window->IsPreviewProgramMode()) {
 		window->DrawBackdrop(float(ovi.base_width),
 				     float(ovi.base_height));
@@ -4242,6 +4247,7 @@ void OBSBasic::RenderMain(void *data, uint32_t cx, uint32_t cy)
 		if (source)
 			obs_source_video_render(source);
 	} else {
+		// 直接绘制输出纹理
 		obs_render_main_texture_src_color_only();
 	}
 	gs_load_vertexbuffer(nullptr);

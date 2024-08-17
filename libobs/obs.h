@@ -1569,43 +1569,54 @@ enum obs_transition_target {
 	OBS_TRANSITION_SOURCE_B,
 };
 
+// 得到转场的源
 EXPORT obs_source_t *
 obs_transition_get_source(obs_source_t *transition,
 			  enum obs_transition_target target);
+// 清除转场
 EXPORT void obs_transition_clear(obs_source_t *transition);
 
+// 得到激活的源
 EXPORT obs_source_t *obs_transition_get_active_source(obs_source_t *transition);
 
+// 转场模式
 enum obs_transition_mode {
 	OBS_TRANSITION_MODE_AUTO,
 	OBS_TRANSITION_MODE_MANUAL,
 };
 
+// 开始转场
 EXPORT bool obs_transition_start(obs_source_t *transition,
 				 enum obs_transition_mode mode,
 				 uint32_t duration_ms, obs_source_t *dest);
 
+// 设置转场的源
 EXPORT void obs_transition_set(obs_source_t *transition, obs_source_t *source);
 
+// 设置手动转场时间
 EXPORT void obs_transition_set_manual_time(obs_source_t *transition, float t);
 EXPORT void obs_transition_set_manual_torque(obs_source_t *transition,
 					     float torque, float clamp);
 
+// 缩放类型
 enum obs_transition_scale_type {
 	OBS_TRANSITION_SCALE_MAX_ONLY,
 	OBS_TRANSITION_SCALE_ASPECT,
 	OBS_TRANSITION_SCALE_STRETCH,
 };
 
+// 设置和得到缩放类型
 EXPORT void obs_transition_set_scale_type(obs_source_t *transition,
 					  enum obs_transition_scale_type type);
 EXPORT enum obs_transition_scale_type
 obs_transition_get_scale_type(const obs_source_t *transition);
 
+// 设置和得到对齐方式
 EXPORT void obs_transition_set_alignment(obs_source_t *transition,
 					 uint32_t alignment);
 EXPORT uint32_t obs_transition_get_alignment(const obs_source_t *transition);
 
+// 设置和得到大小
 EXPORT void obs_transition_set_size(obs_source_t *transition, uint32_t cx,
 				    uint32_t cy);
 EXPORT void obs_transition_get_size(const obs_source_t *transition,
@@ -1621,17 +1632,20 @@ EXPORT void obs_transition_enable_fixed(obs_source_t *transition, bool enable,
 					uint32_t duration_ms);
 EXPORT bool obs_transition_fixed(obs_source_t *transition);
 
+// 视频渲染回调
 typedef void (*obs_transition_video_render_callback_t)(void *data,
 						       gs_texture_t *a,
 						       gs_texture_t *b, float t,
 						       uint32_t cx,
 						       uint32_t cy);
+// 音频混音回调
 typedef float (*obs_transition_audio_mix_callback_t)(void *data, float t);
 
 EXPORT float obs_transition_get_time(obs_source_t *transition);
 
 EXPORT void obs_transition_force_stop(obs_source_t *transition);
 
+// 转场渲染
 EXPORT void
 obs_transition_video_render(obs_source_t *transition,
 			    obs_transition_video_render_callback_t callback);
@@ -1641,15 +1655,18 @@ obs_transition_video_render2(obs_source_t *transition,
 			     obs_transition_video_render_callback_t callback,
 			     gs_texture_t *placeholder_texture);
 
+// 得到转场颜色空间
 EXPORT enum gs_color_space
 obs_transition_video_get_color_space(obs_source_t *transition);
 
+// 直接绘制
 /** Directly renders its sub-source instead of to texture.  Returns false if no
  * longer transitioning */
 EXPORT bool
 obs_transition_video_render_direct(obs_source_t *transition,
 				   enum obs_transition_target target);
 
+// 转场音频渲染
 EXPORT bool
 obs_transition_audio_render(obs_source_t *transition, uint64_t *ts_out,
 			    struct obs_source_audio_mix *audio, uint32_t mixers,
@@ -1673,10 +1690,12 @@ EXPORT void obs_transition_swap_end(obs_source_t *tr_dest,
  *   A scene is a source which is a container of other sources with specific
  * display orientations.  Scenes can also be used like any other source.
  */
+// 场景包含其他源，使用特定方式渲染
 EXPORT obs_scene_t *obs_scene_create(const char *name);
 
 EXPORT obs_scene_t *obs_scene_create_private(const char *name);
 
+// 复制方式
 enum obs_scene_duplicate_type {
 	OBS_SCENE_DUP_REFS,         /**< Source refs only */
 	OBS_SCENE_DUP_COPY,         /**< Fully duplicate */
@@ -1687,21 +1706,25 @@ enum obs_scene_duplicate_type {
 /**
  * Duplicates a scene.
  */
+// 复制场景
 EXPORT obs_scene_t *obs_scene_duplicate(obs_scene_t *scene, const char *name,
 					enum obs_scene_duplicate_type type);
 
+// 场景增加、释放和获取索引
 OBS_EXTERNAL_DEPRECATED EXPORT void obs_scene_addref(obs_scene_t *scene);
 EXPORT void obs_scene_release(obs_scene_t *scene);
-
 EXPORT obs_scene_t *obs_scene_get_ref(obs_scene_t *scene);
 
 /** Gets the scene's source context */
+// 得到场景中的源
 EXPORT obs_source_t *obs_scene_get_source(const obs_scene_t *scene);
 
 /** Gets the scene from its source, or NULL if not a scene */
+// 从源中获取场景
 EXPORT obs_scene_t *obs_scene_from_source(const obs_source_t *source);
 
 /** Determines whether a source is within a scene */
+// 检测场景中是否包含某个源
 EXPORT obs_sceneitem_t *obs_scene_find_source(obs_scene_t *scene,
 					      const char *name);
 
@@ -1724,11 +1747,13 @@ static inline obs_scene_t *obs_get_scene_by_name(const char *name)
 }
 
 /** Enumerates sources within a scene */
+// 枚举场景中的源
 EXPORT void obs_scene_enum_items(obs_scene_t *scene,
 				 bool (*callback)(obs_scene_t *,
 						  obs_sceneitem_t *, void *),
 				 void *param);
 
+// 改变场景中源的顺序
 EXPORT bool obs_scene_reorder_items(obs_scene_t *scene,
 				    obs_sceneitem_t *const *item_order,
 				    size_t item_order_size);
@@ -1746,6 +1771,7 @@ obs_scene_reorder_items2(obs_scene_t *scene,
 EXPORT bool obs_source_is_scene(const obs_source_t *source);
 
 /** Adds/creates a new scene item for a source */
+// 场景中增加源
 EXPORT obs_sceneitem_t *obs_scene_add(obs_scene_t *scene, obs_source_t *source);
 
 typedef void (*obs_scene_atomic_update_func)(void *, obs_scene_t *scene);
@@ -1962,11 +1988,13 @@ EXPORT void obs_sceneitem_set_transition_duration(obs_sceneitem_t *item,
 						  uint32_t duration_ms);
 EXPORT uint32_t obs_sceneitem_get_transition_duration(obs_sceneitem_t *item,
 						      bool show);
+// 做转场
 EXPORT void obs_sceneitem_do_transition(obs_sceneitem_t *item, bool visible);
 EXPORT void obs_sceneitem_transition_load(struct obs_scene_item *item,
 					  obs_data_t *data, bool show);
 EXPORT obs_data_t *obs_sceneitem_transition_save(struct obs_scene_item *item,
 						 bool show);
+// 修剪源
 EXPORT void obs_scene_prune_sources(obs_scene_t *scene);
 
 /* ------------------------------------------------------------------------- */

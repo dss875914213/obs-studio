@@ -759,6 +759,7 @@ static inline void render_item(struct obs_scene_item *item)
 			goto cleanup;
 		}
 
+		// 宽高=源大小-裁剪值
 		uint32_t cx = calc_cx(item, width);
 		uint32_t cy = calc_cy(item, height);
 
@@ -813,6 +814,7 @@ static inline void render_item(struct obs_scene_item *item)
 		(item->blend_method != OBS_BLEND_METHOD_SRGB_OFF);
 	const bool previous = gs_set_linear_srgb(linear_srgb);
 	gs_matrix_push();
+	// 设置几何矩阵
 	gs_matrix_mul(&item->draw_transform);
 	if (item->item_render) {
 		render_item_texture(item, current_space, source_space);
@@ -905,6 +907,7 @@ update_transforms_and_prune_sources(obs_scene_t *scene,
 		resize_group(group_sceneitem);
 }
 
+// 场景渲染
 static void scene_video_render(void *data, gs_effect_t *effect)
 {
 	DARRAY(struct obs_scene_item *) remove_items;
@@ -916,11 +919,14 @@ static void scene_video_render(void *data, gs_effect_t *effect)
 	video_lock(scene);
 
 	if (!scene->is_group) {
+		// 更新转换和修剪源
 		update_transforms_and_prune_sources(scene, &remove_items.da,
 						    NULL);
 	}
 
+	// 保存当前的混合方式
 	gs_blend_state_push();
+	// 重置混合方式
 	gs_reset_blend_state();
 
 	item = scene->first_item;
@@ -932,6 +938,7 @@ static void scene_video_render(void *data, gs_effect_t *effect)
 		item = item->next;
 	}
 
+	// 弹出之前保存的混合方式
 	gs_blend_state_pop();
 
 	video_unlock(scene);
@@ -3846,6 +3853,7 @@ uint32_t obs_sceneitem_get_transition_duration(obs_sceneitem_t *item, bool show)
 		    : item->hide_transition_duration;
 }
 
+// 结束转场
 void obs_sceneitem_transition_stop(void *data, calldata_t *calldata)
 {
 	obs_source_t *parent = data;

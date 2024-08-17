@@ -18,6 +18,7 @@
 #include "obs.h"
 #include "obs-internal.h"
 
+// view 初始化
 bool obs_view_init(struct obs_view *view)
 {
 	if (!view)

@@ -37,6 +37,7 @@ OBSBasicPreview::~OBSBasicPreview()
 	obs_leave_graphics();
 }
 
+// 需要把坐标计算到输出分辨率上
 vec2 OBSBasicPreview::GetMouseEventPos(QMouseEvent *event)
 {
 	OBSBasic *main = reinterpret_cast<OBSBasic *>(App()->GetMainWindow());
@@ -1580,6 +1581,7 @@ void OBSBasicPreview::RotateItem(const vec2 &pos)
 	obs_sceneitem_set_pos(stretchItem, &pos3);
 }
 
+// 鼠标操作
 void OBSBasicPreview::mouseMoveEvent(QMouseEvent *event)
 {
 	OBSBasic *main = reinterpret_cast<OBSBasic *>(App()->GetMainWindow());
@@ -1626,6 +1628,7 @@ void OBSBasicPreview::mouseMoveEvent(QMouseEvent *event)
 			selectionBox = false;
 
 			OBSScene scene = main->GetCurrentScene();
+			// 检测是否组合
 			obs_sceneitem_t *group =
 				obs_sceneitem_get_group(scene, stretchItem);
 			if (group) {

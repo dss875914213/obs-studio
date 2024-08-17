@@ -69,11 +69,11 @@ cut_video_get_color_space(void *data, size_t count,
 }
 
 struct obs_source_info cut_transition = {
-	.id = "cut_transition",
-	.type = OBS_SOURCE_TYPE_TRANSITION,
-	.get_name = cut_get_name,
-	.create = cut_create,
-	.destroy = cut_destroy,
+	.id = "cut_transition", // 源 id
+	.type = OBS_SOURCE_TYPE_TRANSITION, // 源类型
+	.get_name = cut_get_name, // 得到名字
+	.create = cut_create, // 创建
+	.destroy = cut_destroy, // 销毁
 	.video_render = cut_video_render,
 	.audio_render = cut_audio_render,
 	.video_get_color_space = cut_video_get_color_space,

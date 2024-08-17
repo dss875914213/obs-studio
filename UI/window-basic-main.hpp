@@ -343,7 +343,7 @@ private:
 	QScopedPointer<QThread> patronJsonThread;
 	std::string patronJson;
 
-	std::atomic<obs_scene_t *> currentScene = nullptr;
+	std::atomic<obs_scene_t *> currentScene = nullptr; // 当前场景
 
 	void UpdateMultiviewProjectorMenu();
 

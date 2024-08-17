@@ -201,7 +201,7 @@ static void image_source_render(void *data, gs_effect_t *effect)
 	gs_blend_function(GS_BLEND_ONE, GS_BLEND_INVSRCALPHA);
 	// image 不是表示图片特有的 effect, 而是一类渲染方式，但是在哪设置的还没有找到
 	gs_eparam_t *const param = gs_effect_get_param_by_name(effect, "image");
-	// 设置 effect 参数和纹理
+	// 设置 effect 纹理
 	gs_effect_set_texture_srgb(param, texture);
 	// 绘制图形
 	gs_draw_sprite(texture, 0, image->cx, image->cy);

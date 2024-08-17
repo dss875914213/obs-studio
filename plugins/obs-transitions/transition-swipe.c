@@ -30,6 +30,7 @@ static void *swipe_create(obs_data_t *settings, obs_source_t *source)
 	gs_effect_t *effect;
 
 	obs_enter_graphics();
+	// 加载 swipe_transition.effect 着色器
 	effect = gs_effect_create_from_file(file, NULL);
 	obs_leave_graphics();
 	bfree(file);
@@ -42,6 +43,7 @@ static void *swipe_create(obs_data_t *settings, obs_source_t *source)
 	swipe = bmalloc(sizeof(*swipe));
 	swipe->source = source;
 	swipe->effect = effect;
+	// 获取shader 中参数路径
 	swipe->a_param = gs_effect_get_param_by_name(effect, "tex_a");
 	swipe->b_param = gs_effect_get_param_by_name(effect, "tex_b");
 	swipe->swipe_param = gs_effect_get_param_by_name(effect, "swipe_val");
@@ -57,6 +59,7 @@ static void swipe_destroy(void *data)
 	bfree(swipe);
 }
 
+// 设置擦除方向
 static void swipe_update(void *data, obs_data_t *settings)
 {
 	struct swipe_info *swipe = data;
@@ -90,10 +93,12 @@ static void swipe_callback(void *data, gs_texture_t *a, gs_texture_t *b,
 	const bool previous = gs_framebuffer_srgb_enabled();
 	gs_enable_framebuffer_srgb(true);
 
+	// 修改 effect 参数
 	gs_effect_set_texture_srgb(swipe->a_param, swipe->swipe_in ? b : a);
 	gs_effect_set_texture_srgb(swipe->b_param, swipe->swipe_in ? a : b);
 	gs_effect_set_vec2(swipe->swipe_param, &swipe_val);
 
+	// 从 effect 中获取 "Swipe" technique ， 设置着色器
 	while (gs_effect_loop(swipe->effect, "Swipe"))
 		gs_draw_sprite(NULL, 0, cx, cy);
 

@@ -1694,6 +1694,7 @@ void OBSBasic::SetPreviewProgramMode(bool enabled)
 	UpdateTitleBar();
 }
 
+// 导播台模式，绘制输出窗口
 void OBSBasic::RenderProgram(void *data, uint32_t cx, uint32_t cy)
 {
 	GS_DEBUG_MARKER_BEGIN(GS_DEBUG_COLOR_DEFAULT, "RenderProgram");

@@ -1889,6 +1889,7 @@ void device_load_samplerstate(gs_device_t *device,
 	device->context->PSSetSamplers(unit, 1, &state);
 }
 
+// 加载顶点着色器
 void device_load_vertexshader(gs_device_t *device, gs_shader_t *vertshader)
 {
 	ID3D11VertexShader *shader = NULL;
@@ -1914,8 +1915,11 @@ void device_load_vertexshader(gs_device_t *device, gs_shader_t *vertshader)
 	}
 
 	device->curVertexShader = vs;
+	// 设置顶点着色器
 	device->context->VSSetShader(shader, NULL, 0);
+	// 设置顶点输入布局
 	device->context->IASetInputLayout(layout);
+	// 设置常量缓存
 	device->context->VSSetConstantBuffers(0, 1, &constants);
 }
 
@@ -2006,7 +2010,9 @@ static void device_set_render_target_internal(gs_device_t *device,
 					      gs_zstencil_t *zstencil,
 					      enum gs_color_space space)
 {
+	// 如果当前交换链非空
 	if (device->curSwapChain) {
+		// tex 为空，则设为当前交换链目标
 		if (!tex)
 			tex = &device->curSwapChain->target;
 		if (!zstencil)
@@ -2258,6 +2264,7 @@ void device_draw(gs_device_t *device, enum gs_draw_mode draw_mode,
 		if (!device->curSwapChain && !device->curRenderTarget)
 			throw "No render target or swap chain to render to";
 
+		// 更新渲染目标视图
 		device->FlushOutputViews();
 
 		gs_effect_t *effect = gs_get_effect();

@@ -683,15 +683,15 @@ struct obs_source {
 	bool texcoords_centered;
 
 	/* timing (if video is present, is based upon video) */
-	volatile bool timing_set;
-	volatile uint64_t timing_adjust;
+	volatile bool timing_set; // 是否设置调整值
+	volatile uint64_t timing_adjust; // 时间调整值
 	uint64_t resample_offset;
 	uint64_t last_audio_ts;
 	uint64_t next_audio_ts_min;
 	uint64_t next_audio_sys_ts_min;
 	uint64_t last_frame_ts;
 	uint64_t last_sys_timestamp;
-	bool async_rendered;
+	bool async_rendered; // 异步，已经渲染
 
 	/* audio */
 	bool audio_failed;
@@ -726,8 +726,8 @@ struct obs_source {
 
 	/* async video data */
 	gs_texture_t *async_textures[MAX_AV_PLANES];
-	gs_texrender_t *async_texrender;
-	struct obs_source_frame *cur_async_frame;
+	gs_texrender_t *async_texrender; // 纹理渲染
+	struct obs_source_frame *cur_async_frame; // 当前异步帧
 	bool async_gpu_conversion;
 	enum video_format async_format;
 	bool async_full_range;
@@ -741,13 +741,13 @@ struct obs_source {
 	bool async_flip;
 	bool async_linear_alpha;
 	bool async_active;
-	bool async_update_texture;
-	bool async_unbuffered;
-	bool async_decoupled;
+	bool async_update_texture; // 更新纹理
+	bool async_unbuffered; // 无缓存的
+	bool async_decoupled; // 异步解耦
 	struct obs_source_frame *async_preload_frame;
 	DARRAY(struct async_frame) async_cache;
 	DARRAY(struct obs_source_frame *) async_frames;
-	pthread_mutex_t async_mutex;
+	pthread_mutex_t async_mutex; // 异步帧互斥锁
 	uint32_t async_width;
 	uint32_t async_height;
 	uint32_t async_cache_width;
@@ -771,13 +771,13 @@ struct obs_source {
 	bool deinterlace_rendered;
 
 	/* filters */
-	struct obs_source *filter_parent;
-	struct obs_source *filter_target;
+	struct obs_source *filter_parent; // 滤镜对应的源
+	struct obs_source *filter_target; // 如果是唯一的滤镜则为滤镜对应的源，否则为下一个滤镜
 	DARRAY(struct obs_source *) filters;
 	pthread_mutex_t filter_mutex;
-	gs_texrender_t *filter_texrender;
+	gs_texrender_t *filter_texrender; // 滤镜纹理，上一个滤镜绘制到这里，下一个滤镜使用这个纹理进行绘制
 	enum obs_allow_direct_render allow_direct;
-	bool rendering_filter;
+	bool rendering_filter; // 正在渲染滤镜
 	bool filter_bypass_active;
 
 	/* sources specific hotkeys */
@@ -796,29 +796,29 @@ struct obs_source {
 	uint64_t push_to_talk_stop_time;
 
 	/* transitions */
-	uint64_t transition_start_time;
-	uint64_t transition_duration;
-	pthread_mutex_t transition_tex_mutex;
-	gs_texrender_t *transition_texrender[2];
-	pthread_mutex_t transition_mutex;
-	obs_source_t *transition_sources[2];
+	uint64_t transition_start_time; // 转场开始时间
+	uint64_t transition_duration; // 转场持续时间
+	pthread_mutex_t transition_tex_mutex; // 转场纹理锁
+	gs_texrender_t *transition_texrender[2]; // 转场纹理
+	pthread_mutex_t transition_mutex; // 转场源锁
+	obs_source_t *transition_sources[2]; // 转场源
 	float transition_manual_clamp;
 	float transition_manual_torque;
 	float transition_manual_target;
 	float transition_manual_val;
-	bool transitioning_video;
-	bool transitioning_audio;
+	bool transitioning_video; // 视频正在转场
+	bool transitioning_audio; // 音频正在转场
 	bool transition_source_active[2];
-	uint32_t transition_alignment;
-	uint32_t transition_actual_cx;
+	uint32_t transition_alignment; // 对齐
+	uint32_t transition_actual_cx; // 转场实际宽高
 	uint32_t transition_actual_cy;
 	uint32_t transition_cx;
 	uint32_t transition_cy;
-	uint32_t transition_fixed_duration;
-	bool transition_use_fixed_duration;
-	enum obs_transition_mode transition_mode;
-	enum obs_transition_scale_type transition_scale_type;
-	struct matrix4 transition_matrices[2];
+	uint32_t transition_fixed_duration; // 转场固定耗时
+	bool transition_use_fixed_duration; // 是否固定耗时
+	enum obs_transition_mode transition_mode; // 转场模式，自动或手动
+	enum obs_transition_scale_type transition_scale_type; // 转场缩放类型
+	struct matrix4 transition_matrices[2]; // 转场矩阵
 
 	/* color space */
 	gs_texrender_t *color_space_texrender;

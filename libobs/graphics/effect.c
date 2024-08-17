@@ -58,6 +58,7 @@ gs_technique_t *gs_effect_get_current_technique(const gs_effect_t *effect)
 	return effect->cur_technique;
 }
 
+// 设置着色器
 bool gs_effect_loop(gs_effect_t *effect, const char *name)
 {
 	if (!effect) {
@@ -89,6 +90,7 @@ bool gs_effect_loop(gs_effect_t *effect, const char *name)
 		gs_technique_end_pass(effect->cur_technique);
 	}
 
+	// 设置着色器
 	if (!gs_technique_begin_pass(effect->cur_technique,
 				     effect->loop_pass++)) {
 		gs_technique_end(effect->cur_technique);

@@ -1054,7 +1054,7 @@ void gs_draw_sprite(gs_texture_t *tex, uint32_t flip, uint32_t width,
 	gs_vertexbuffer_flush(graphics->sprite_buffer);
 	// 将缓存设置到当前缓存中
 	gs_load_vertexbuffer(graphics->sprite_buffer);
-	// 设置索引缓存为空
+	// 清除顶点缓存
 	gs_load_indexbuffer(NULL);
 	// 绘制三角带
 	gs_draw(GS_TRISTRIP, 0, 0);

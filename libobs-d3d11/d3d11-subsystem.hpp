@@ -1021,7 +1021,7 @@ struct gs_device {
 	bool nv12Supported = false; // 是否支持 nv12 纹理
 	bool p010Supported = false; // 是否支持 p010 纹理
 
-	gs_texture_2d *curRenderTarget = nullptr;
+	gs_texture_2d *curRenderTarget = nullptr; // 当前渲染目标视图
 	gs_zstencil_buffer *curZStencilBuffer = nullptr;
 	int curRenderSide = 0;
 	enum gs_color_space curColorSpace = GS_CS_SRGB;

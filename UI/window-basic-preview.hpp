@@ -46,7 +46,7 @@ private:
 	vec2 startItemPos;
 	vec2 cropSize;
 	OBSSceneItem stretchGroup;
-	OBSSceneItem stretchItem;
+	OBSSceneItem stretchItem; // 缩放项
 	ItemHandle stretchHandle = ItemHandle::None;
 	float rotateAngle;
 	vec2 rotatePoint;

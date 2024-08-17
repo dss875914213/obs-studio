@@ -124,6 +124,7 @@ static inline void unmap_last_surface(struct obs_core_video_mix *video)
 }
 
 static const char *render_main_texture_name = "render_main_texture";
+// 渲染主要纹理
 static inline void render_main_texture(struct obs_core_video_mix *video)
 {
 	uint32_t base_width = video->ovi.base_width;
@@ -1098,6 +1099,7 @@ static inline bool stop_requested(void)
 	return success;
 }
 
+// 渲染线程
 bool obs_graphics_thread_loop(struct obs_graphics_context *context)
 {
 	uint64_t frame_start = os_gettime_ns();
@@ -1125,10 +1127,12 @@ bool obs_graphics_thread_loop(struct obs_graphics_context *context)
 #endif
 
 	profile_start(output_frame_name);
+	// 输出帧
 	output_frames();
 	profile_end(output_frame_name);
 
 	profile_start(render_displays_name);
+	// 本地预览
 	render_displays();
 	profile_end(render_displays_name);
 

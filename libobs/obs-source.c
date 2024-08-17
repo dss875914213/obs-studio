@@ -2417,9 +2417,10 @@ static void obs_source_update_async_video(obs_source_t *source)
 {
 	if (!source->async_rendered) {
 		source->async_rendered = true;
-
+		// 获取最新帧
 		struct obs_source_frame *frame = obs_source_get_frame(source);
 		if (frame) {
+			// 如果两者纹理格式不匹配，重新创建纹理
 			check_to_swap_bgrx_bgra(source, frame);
 
 			if (!source->async_decoupled ||
@@ -2825,9 +2826,11 @@ static inline void render_video(obs_source_t *source)
 		return;
 	}
 
+	// 输入源，且是异步源
 	if (source->info.type == OBS_SOURCE_TYPE_INPUT &&
 	    (source->info.output_flags & OBS_SOURCE_ASYNC) != 0 &&
 	    !source->rendering_filter) {
+		// 交织模式
 		if (deinterlacing_enabled(source))
 			deinterlace_update_async_video(source);
 		obs_source_update_async_video(source);
@@ -2842,10 +2845,10 @@ static inline void render_video(obs_source_t *source)
 	GS_DEBUG_MARKER_BEGIN_FORMAT(GS_DEBUG_COLOR_SOURCE,
 				     get_type_format(source->info.type),
 				     obs_source_get_name(source));
-
+	// 如果有滤镜，且没有在渲染滤镜中
 	if (source->filters.num && !source->rendering_filter)
 		obs_source_render_filters(source);
-
+	// 渲染对应的源
 	else if (source->info.video_render)
 		obs_source_main_render(source);
 
@@ -2854,13 +2857,14 @@ static inline void render_video(obs_source_t *source)
 
 	else if (deinterlacing_enabled(source))
 		deinterlace_render(source);
-
+	// 异步源
 	else
 		obs_source_render_async_video(source);
 
 	GS_DEBUG_MARKER_END();
 }
 
+// 视频源渲染，source 可能是滤镜
 void obs_source_video_render(obs_source_t *source)
 {
 	if (!obs_source_valid(source, "obs_source_video_render"))
@@ -2995,6 +2999,7 @@ obs_source_t *obs_filter_get_target(const obs_source_t *filter)
 
 #define OBS_SOURCE_AV (OBS_SOURCE_ASYNC_VIDEO | OBS_SOURCE_AUDIO)
 
+// 测试源和滤镜是否兼容
 static bool filter_compatible(obs_source_t *source, obs_source_t *filter)
 {
 	uint32_t s_caps = source->info.output_flags & OBS_SOURCE_AV;
@@ -3007,6 +3012,7 @@ static bool filter_compatible(obs_source_t *source, obs_source_t *filter)
 	return (s_caps & f_caps) == f_caps;
 }
 
+// 视频源增加滤镜
 void obs_source_filter_add(obs_source_t *source, obs_source_t *filter)
 {
 	struct calldata cd;
@@ -4149,6 +4155,7 @@ static inline struct obs_source_frame *get_closest_frame(obs_source_t *source,
  * the frame with the closest timing to ensure sync.  Also ensures that timing
  * with audio is synchronized.
  */
+// 使用最近的帧确保同步
 struct obs_source_frame *obs_source_get_frame(obs_source_t *source)
 {
 	struct obs_source_frame *frame = NULL;
@@ -4257,6 +4264,7 @@ static inline void render_filter_bypass(obs_source_t *target,
 	gs_technique_end(tech);
 }
 
+// 设置纹理 和 effect 进行绘制
 static inline void render_filter_tex(gs_texture_t *tex, gs_effect_t *effect,
 				     uint32_t width, uint32_t height,
 				     const char *tech_name)
@@ -4308,6 +4316,7 @@ bool obs_source_process_filter_begin(obs_source_t *filter,
 		filter, format, GS_CS_SRGB, allow_direct);
 }
 
+// 开始绘制滤镜
 bool obs_source_process_filter_begin_with_color_space(
 	obs_source_t *filter, enum gs_color_format format,
 	enum gs_color_space space, enum obs_allow_direct_render allow_direct)
@@ -4347,6 +4356,7 @@ bool obs_source_process_filter_begin_with_color_space(
 	 * filter in the chain for the parent, then render the parent directly
 	 * using the filter effect instead of rendering to texture to reduce
 	 * the total number of passes */
+	// 优化，如果是最后一个滤镜，直接设置给视频源，让他直接绘制
 	if (can_bypass(target, parent, filter_flags, parent_flags, allow_direct,
 		       space)) {
 		filter->filter_bypass_active = true;
@@ -4369,6 +4379,7 @@ bool obs_source_process_filter_begin_with_color_space(
 			gs_texrender_create(format, GS_ZS_NONE);
 	}
 
+	// 将 filter_texrender 设置为渲染目标
 	if (gs_texrender_begin_with_color_space(filter->filter_texrender, cx,
 						cy, space)) {
 		gs_blend_state_push();
@@ -4396,6 +4407,7 @@ bool obs_source_process_filter_begin_with_color_space(
 	return true;
 }
 
+// 结束绘制滤镜
 void obs_source_process_filter_tech_end(obs_source_t *filter,
 					gs_effect_t *effect, uint32_t width,
 					uint32_t height, const char *tech_name)

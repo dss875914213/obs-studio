@@ -17,12 +17,12 @@ extern struct obs_source_info luma_wipe_transition;
 
 bool obs_module_load(void)
 {
-	obs_register_source(&cut_transition);
-	obs_register_source(&fade_transition);
-	obs_register_source(&swipe_transition);
-	obs_register_source(&slide_transition);
-	obs_register_source(&stinger_transition);
-	obs_register_source(&fade_to_color_transition);
-	obs_register_source(&luma_wipe_transition);
+	obs_register_source(&cut_transition); // 裁剪转场
+	obs_register_source(&fade_transition); // 淡入淡出转场
+	obs_register_source(&swipe_transition); // 滑动转场
+	obs_register_source(&slide_transition); // 幻灯片转场
+	obs_register_source(&stinger_transition); // 插入视频
+	obs_register_source(&fade_to_color_transition); // 色彩淡入淡出
+	obs_register_source(&luma_wipe_transition); // 亮度擦除
 	return true;
 }
