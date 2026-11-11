@@ -536,6 +536,19 @@ static int run_program(fstream &logFile, int argc, char *argv[])
 			goto run;
 		}
 
+#ifdef ENABLE_CUSTOM_VIDEO_VCAM
+		if (!multi) {
+			if (!created_log) {
+				create_log_file(logFile);
+				created_log = true;
+			}
+
+			blog(LOG_WARNING,
+			     "Custom video virtual camera: OBS is already running; exiting without user prompt.");
+			return 2;
+		}
+#endif
+
 		if (!multi) {
 			QMessageBox mb(QMessageBox::Question, QTStr("AlreadyRunning.Title"),
 				       QTStr("AlreadyRunning.Text"));

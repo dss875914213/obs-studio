@@ -1107,6 +1107,11 @@ void OBSApp::checkForUncleanShutdown()
 	bool hasNewCrashLog = crashHandler_->hasNewCrashLog();
 
 	if (hasUncleanShutdown) {
+#ifdef ENABLE_CUSTOM_VIDEO_VCAM
+		blog(LOG_WARNING,
+		     "Custom video virtual camera: previous unclean shutdown detected; continuing without Safe Mode prompt.");
+		(void)hasNewCrashLog;
+#else
 		UncleanLaunchAction launchAction = handleUncleanShutdown(hasNewCrashLog);
 
 		safe_mode = launchAction.useSafeMode;
@@ -1114,6 +1119,7 @@ void OBSApp::checkForUncleanShutdown()
 		if (launchAction.sendCrashReport) {
 			crashHandler_->uploadLastCrashLog();
 		}
+#endif
 	}
 }
 
