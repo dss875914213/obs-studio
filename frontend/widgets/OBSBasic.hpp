@@ -1156,6 +1156,8 @@ private:
 	QPointer<QAction> renameSource;
 
 	void CreateFirstRunSources();
+	void CreateCustomVideoVirtualCamSource(obs_scene_t *scene);
+	std::string GetCustomVideoVirtualCamPath() const;
 
 	OBSSceneItem GetSceneItem(QListWidgetItem *item);
 	OBSSceneItem GetCurrentSceneItem();

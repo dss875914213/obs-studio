@@ -1037,8 +1037,12 @@ void OBSBasic::CreateDefaultScene(bool firstStart)
 
 	OBSSceneAutoRelease scene = obs_scene_create(Str("Basic.Scene"));
 
+#ifdef ENABLE_CUSTOM_VIDEO_VCAM
+	CreateCustomVideoVirtualCamSource(scene);
+#else
 	if (firstStart)
 		CreateFirstRunSources();
+#endif
 
 	SetCurrentScene(scene, true);
 

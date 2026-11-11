@@ -29,6 +29,8 @@
 
 #include <qt-wrappers.hpp>
 
+#include <util/platform.h>
+
 #include <QWidgetAction>
 
 #include <sstream>
@@ -103,6 +105,58 @@ void OBSBasic::CreateFirstRunSources()
 		ResetAudioDevice(App()->OutputAudioSource(), "default", Str("Basic.DesktopDevice1"), 1);
 	if (hasInputAudio)
 		ResetAudioDevice(App()->InputAudioSource(), "default", Str("Basic.AuxDevice1"), 3);
+}
+
+std::string OBSBasic::GetCustomVideoVirtualCamPath() const
+{
+#ifdef ENABLE_CUSTOM_VIDEO_VCAM
+	char *path = os_get_executable_path_ptr("../../video/default.mp4");
+	if (!path)
+		return {};
+
+	std::string videoPath = path;
+	bfree(path);
+	return videoPath;
+#else
+	return {};
+#endif
+}
+
+void OBSBasic::CreateCustomVideoVirtualCamSource(obs_scene_t *scene)
+{
+#ifdef ENABLE_CUSTOM_VIDEO_VCAM
+	if (!scene)
+		return;
+
+	std::string videoPath = GetCustomVideoVirtualCamPath();
+	if (videoPath.empty() || !os_file_exists(videoPath.c_str())) {
+		blog(LOG_WARNING, "Custom video virtual camera: default video not found: %s", videoPath.c_str());
+		return;
+	}
+
+	OBSDataAutoRelease settings = obs_data_create();
+	obs_data_set_bool(settings, "is_local_file", true);
+	obs_data_set_string(settings, "local_file", videoPath.c_str());
+	obs_data_set_bool(settings, "looping", true);
+	obs_data_set_bool(settings, "restart_on_activate", true);
+	obs_data_set_bool(settings, "clear_on_media_end", false);
+
+	OBSSourceAutoRelease source = obs_source_create("ffmpeg_source", "Local Loop Video", settings, nullptr);
+	if (!source) {
+		blog(LOG_ERROR, "Custom video virtual camera: failed to create ffmpeg_source");
+		return;
+	}
+
+	obs_sceneitem_t *item = obs_scene_add(scene, source);
+	if (item) {
+		obs_sceneitem_set_bounds_type(item, OBS_BOUNDS_SCALE_INNER);
+
+		vec2 bounds = {1920.0f, 1080.0f};
+		obs_sceneitem_set_bounds(item, &bounds);
+	}
+#else
+	UNUSED_PARAMETER(scene);
+#endif
 }
 
 OBSSceneItem OBSBasic::GetSceneItem(QListWidgetItem *item)

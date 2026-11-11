@@ -18,6 +18,7 @@ include(helpers)
 option(ENABLE_UI "Enable building with UI (requires Qt)" ON)
 option(ENABLE_SCRIPTING "Enable scripting support" ON)
 option(ENABLE_HEVC "Enable HEVC encoders" ON)
+option(ENABLE_CUSTOM_VIDEO_VCAM "Build the lightweight local-video virtual camera variant" OFF)
 
 add_subdirectory(libobs)
 if(OS_WINDOWS)

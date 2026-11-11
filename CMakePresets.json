@@ -182,6 +182,29 @@
       }
     },
     {
+      "name": "windows-x64-video-vcam",
+      "displayName": "Windows x64 Local Video Virtual Camera",
+      "description": "Lightweight Windows x64 build for looping a local video into OBS Virtual Camera",
+      "inherits": ["windows-x64"],
+      "cacheVariables": {
+        "ENABLE_CUSTOM_VIDEO_VCAM": true,
+        "ENABLE_SCRIPTING": false,
+        "ENABLE_BROWSER": false,
+        "ENABLE_AJA": false,
+        "ENABLE_DECKLINK": false,
+        "ENABLE_WEBSOCKET": false,
+        "ENABLE_WEBRTC": false,
+        "ENABLE_VST": false,
+        "ENABLE_VLC": false,
+        "ENABLE_NVENC": false,
+        "ENABLE_QSV11": false,
+        "ENABLE_SERVICE_UPDATES": false,
+        "ENABLE_COMPAT_UPDATES": false,
+        "ENABLE_NEW_MPEGTS_OUTPUT": false,
+        "ENABLE_HEVC": true
+      }
+    },
+    {
       "name": "windows-arm64",
       "displayName": "Windows ARM64",
       "description": "Default Windows build (ARM64)",
@@ -220,6 +243,13 @@
       "configurePreset": "windows-x64",
       "displayName": "Windows 64-bit",
       "description": "Windows build for 64-bit (aka x64)",
+      "configuration": "RelWithDebInfo"
+    },
+    {
+      "name": "windows-x64-video-vcam",
+      "configurePreset": "windows-x64-video-vcam",
+      "displayName": "Windows 64-bit Local Video Virtual Camera",
+      "description": "Windows build for the lightweight local-video virtual camera variant",
       "configuration": "RelWithDebInfo"
     },
     {

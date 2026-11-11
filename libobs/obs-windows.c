@@ -55,6 +55,16 @@ char *find_libobs_data_file(const char *file)
 	if (check_path(file, "../../data/libobs/", &path))
 		return path.array;
 
+	char *relative_data_path = os_get_executable_path_ptr("../../data/libobs/");
+	if (relative_data_path) {
+		if (check_path(file, relative_data_path, &path)) {
+			bfree(relative_data_path);
+			return path.array;
+		}
+
+		bfree(relative_data_path);
+	}
+
 	dstr_free(&path);
 	return NULL;
 }

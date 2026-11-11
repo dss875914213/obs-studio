@@ -9,6 +9,16 @@ endif()
 
 set_property(GLOBAL APPEND PROPERTY OBS_FEATURES_ENABLED "Plugin Support")
 
+if(ENABLE_CUSTOM_VIDEO_VCAM)
+  add_obs_plugin(obs-ffmpeg)
+  add_obs_plugin(obs-outputs)
+  add_obs_plugin(obs-transitions)
+  add_obs_plugin(obs-x264)
+  add_obs_plugin(rtmp-services)
+  add_obs_plugin(win-dshow PLATFORMS WINDOWS)
+  return()
+endif()
+
 macro(check_obs_browser)
   if((OS_WINDOWS AND CMAKE_VS_PLATFORM_NAME MATCHES "(ARM64|x64)") OR OS_MACOS OR OS_LINUX)
     if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/obs-browser/CMakeLists.txt")

@@ -102,6 +102,10 @@ get_property(obs_module_list GLOBAL PROPERTY OBS_MODULES_ENABLED)
 list(JOIN obs_module_list "|" SAFE_MODULES)
 target_compile_definitions(obs-studio PRIVATE "SAFE_MODULES=\"${SAFE_MODULES}\"")
 
+if(ENABLE_CUSTOM_VIDEO_VCAM)
+  target_compile_definitions(obs-studio PRIVATE ENABLE_CUSTOM_VIDEO_VCAM)
+endif()
+
 get_target_property(target_sources obs-studio SOURCES)
 set(target_cpp_sources ${target_sources})
 set(target_hpp_sources ${target_sources})

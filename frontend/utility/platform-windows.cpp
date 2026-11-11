@@ -19,6 +19,7 @@
 
 #include <OBSApp.hpp>
 
+#include <util/platform.h>
 #include <util/windows/ComPtr.hpp>
 #include <util/windows/WinHandle.hpp>
 #include <util/windows/win-version.h>
@@ -45,13 +46,38 @@ static inline bool check_path(const char *data, const char *path, string &output
 
 	blog(LOG_DEBUG, "Attempted path: %s", output.c_str());
 
-	return os_file_exists(output.c_str());
+	bool exists = os_file_exists(output.c_str());
+	if (!exists && !output.empty() && (output.back() == '/' || output.back() == '\\')) {
+		string trimmed = output;
+		while (!trimmed.empty() && (trimmed.back() == '/' || trimmed.back() == '\\'))
+			trimmed.pop_back();
+
+		exists = os_file_exists(trimmed.c_str());
+	}
+
+	return exists;
 }
 
 bool GetDataFilePath(const char *data, string &output)
 {
 	if (check_path(data, "data/obs-studio/", output))
 		return true;
+
+	char *relative_data_path = os_get_executable_path_ptr("../../data/obs-studio/");
+	if (relative_data_path) {
+		char absolute_data_path[MAX_PATH];
+		bool found = false;
+
+		if (os_get_abs_path(relative_data_path, absolute_data_path, sizeof(absolute_data_path)) == 0)
+			found = check_path(data, absolute_data_path, output);
+		else
+			found = check_path(data, relative_data_path, output);
+
+		bfree(relative_data_path);
+
+		if (found)
+			return true;
+	}
 
 	return check_path(data, OBS_DATA_PATH "/obs-studio/", output);
 }

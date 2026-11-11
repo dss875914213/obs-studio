@@ -1,0 +1,13 @@
+@echo off
+setlocal
+set ROOT=%~dp0
+if not exist "%ROOT%config\obs-studio\.sentinel" mkdir "%ROOT%config\obs-studio\.sentinel"
+if not exist "%ROOT%config\obs-studio\basic\scenes" mkdir "%ROOT%config\obs-studio\basic\scenes"
+if not exist "%ROOT%config\obs-studio\basic\profiles" mkdir "%ROOT%config\obs-studio\basic\profiles"
+if not exist "%ROOT%config\obs-studio\logs" mkdir "%ROOT%config\obs-studio\logs"
+del /q "%ROOT%config\obs-studio\.sentinel\run_*" >nul 2>nul
+del /q "%ROOT%config\obs-studio\basic\scenes\*.json" >nul 2>nul
+del /q "%ROOT%config\obs-studio\basic\scenes\*.json.bak" >nul 2>nul
+cd /d "%ROOT%bin\64bit"
+"%ROOT%bin\64bit\obs64.exe" --portable --only-bundled-plugins --disable-updater --disable-missing-files-check --startvirtualcam
+endlocal
